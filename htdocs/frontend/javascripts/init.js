@@ -51,7 +51,7 @@ var vz = {
  */
 $(document).ready(function() {
 	// late binding
-	$(window).resize(function() {
+	$(window).bind("orientationchange resize", function() {
 		vz.options.tuples = Math.round($('#flot').width() / 3);
 		$('#tuples').val(vz.options.tuples);
 		if (vz && vz.plot) {
@@ -63,7 +63,7 @@ $(document).ready(function() {
 				vz.plot.draw();
 		}
 	});
-	
+
 	window.onerror = function(errorMsg, url, lineNumber) {
 		vz.wui.dialogs.error('Javascript Runtime Error', errorMsg);
 	};
