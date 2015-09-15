@@ -44,8 +44,9 @@ class ConsoleApplication extends Application {
 	public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN') {
 		parent::__construct($name, $version);
 
-		if (!self::isConsole())
+		if (!self::isConsole()) {
 			throw new \Exception('This tool can only be run locally.');
+		}
 	}
 
 	/**
