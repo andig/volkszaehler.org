@@ -44,8 +44,8 @@ class Channel extends Entity {
 	/**
 	 * Constructor
 	 */
-	public function __construct($type) {
-		parent::__construct($type);
+	public function __construct($type, $uuid = null) {
+		parent::__construct($type, $uuid);
 
 		$this->data = new ArrayCollection();
 		$this->groups = new ArrayCollection();

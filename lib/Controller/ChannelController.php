@@ -64,8 +64,14 @@ class ChannelController extends EntityController {
 			throw new \Exception('Missing entity type');
 		}
 
-		$channel = new Model\Channel($type);
-		$this->setProperties($channel, $this->request->query->all());
+		// allow creating entities with specified UUID for backup purposes
+		$properties = $this->request->query->all();
+		if (null !== ($uuid = $this->request->query->get('uuid'))) {
+			unset($properties['uuid']); // uuid is not a "normal" property
+		}
+
+		$channel = new Model\Channel($type, $uuid);
+		$this->setProperties($channel, $properties);
 
 		$this->em->persist($channel);
 		$this->em->flush();

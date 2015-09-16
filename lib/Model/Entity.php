@@ -74,13 +74,13 @@ abstract class Entity {
 	 *
 	 * @param string $type
 	 */
-	public function __construct($type) {
+	public function __construct($type, $uuid = null) {
 		if (!Definition\EntityDefinition::exists($type)) {
 			throw new \Exception('Unknown entity type: \'' . $type . '\'');
 		}
 
 		$this->type = $type;
-		$this->uuid = (string) Util\UUID::mint(); // generate random UUID
+		$this->uuid = $uuid ?: (string) Util\UUID::mint(); // generate random UUID
 
 		$this->properties = new Collections\ArrayCollection();
 		$this->parents = new Collections\ArrayCollection();
