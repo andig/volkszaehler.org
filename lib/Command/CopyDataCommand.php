@@ -56,7 +56,8 @@ class CopyDataCommand extends MiddlewareCommand {
 		$this->setName('copy')
 			->setDescription('Copy channel data between middlewares')
 			->addOption('duplicate', 'd', InputOption::VALUE_NONE, 'Skip duplicate date on copy')
-			->addOption('no-validate', 'n', InputOption::VALUE_NONE, 'Skip validating that entity definitions are in sync');
+			->addOption('no-validate', 'n', InputOption::VALUE_NONE, 'Skip validating that channel definitions are in sync')
+			->addOption('clone', 'c', InputOption::VALUE_REQUIRED, 'Clone channel data on source middleware, i.e. create a copy in a second channel');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output) {
@@ -87,9 +88,16 @@ class CopyDataCommand extends MiddlewareCommand {
 
 		// copy data
 		$this->verbose('Copying entity data from source to target');
-		foreach ($this->entities as $uuid => $entity) {
-			$this->output->writeln('Copying channel '. $uuid . ' (' . $entity['title'] . ')');
-			$this->copyDataForEntity($entity);
+		if ($input->getOption('clone')) {
+			if (count($this->entities) !== 1) {
+				throw new \RuntimeException('Can only clone a single channel at a time');
+			}
+		}
+		else {
+			foreach ($this->entities as $uuid => $entity) {
+				$this->output->writeln('Copying channel '. $uuid . ' (' . $entity['title'] . ')');
+				$this->copyDataForEntity($entity, $this->source, $this->target);
+			}
 		}
 	}
 
@@ -107,18 +115,18 @@ class CopyDataCommand extends MiddlewareCommand {
 	/**
 	 * Copy data from source to destination
 	 */
-	private function copyDataForEntity($entity) {
+	private function copyDataForEntity($entity, $source, $target) {
 		$this->uuid = $entity['uuid'];
 		$contextUri = 'data/' . $this->uuid . '.json';
 
 		// get head of copy target
-		$json = json_decode($this->client->get($this->target . $contextUri, [
+		$json = json_decode($this->client->get($target . $contextUri, [
 			'query' => ['from' => 'now']
 		])->getBody());
 		$this->last_ts = isset($json->data->tuples) && count($json->data->tuples) ? $json->data->tuples[0][0] : 0;
 
 		// get head of copy source
-		$json = json_decode($this->client->get($this->source . $contextUri, [
+		$json = json_decode($this->client->get($source . $contextUri, [
 			'query' => ['from' => 'now']
 		])->getBody());
 		$current_ts = isset($json->data->tuples) && count($json->data->tuples) ? $json->data->tuples[0][0] : 0;
@@ -148,7 +156,7 @@ class CopyDataCommand extends MiddlewareCommand {
 		// get number of tuples to copy
 		$count = null;
 		if ($this->database->aggregation_enabled && $this->database->aggregation_rows) {
-			$json = json_decode($this->client->get($this->source . $contextUri, [
+			$json = json_decode($this->client->get($source . $contextUri, [
 				'query' => [
 					'from' => $this->last_ts+1,
 					'to' => 'now',
@@ -165,7 +173,7 @@ class CopyDataCommand extends MiddlewareCommand {
 		$this->progress->start();
 
 		// select entire source data for copying (streamed response, no memory overflow)
-		$stream = $this->client->get($this->source . $contextUri, [
+		$stream = $this->client->get($source . $contextUri, [
 			'query' => [
 				'from' => $this->last_ts+1,
 				'to' => 'now',
