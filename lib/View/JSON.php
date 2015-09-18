@@ -106,6 +106,25 @@ class JSON extends View {
 	}
 
 	/**
+	 * Indicate if a StreamedResponse should be used in case of data context get requests
+	 */
+	private function enableStreaming() {
+		if (Util\Debug::isActivated()) {
+			return false;
+		}
+
+		foreach ($this->json as $key => $data) {
+			if ($data instanceof Interpreter\Interpreter ||
+				is_array($data) && isset($data[0]) && $data[0] instanceof Interpreter\Interpreter
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Creates exception response
 	 *
 	 * @param \Exception $exception

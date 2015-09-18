@@ -128,6 +128,8 @@ class MiddlewareCommand extends BaseCommand {
 
 	/**
 	 * Create http client
+	 *
+	 * @return GuzzleHttp\Client
 	 */
 	protected function clientFactory() {
 		$this->client = new Client([
@@ -157,7 +159,7 @@ class MiddlewareCommand extends BaseCommand {
 	}
 
 	/**
-	 * Check if url can returns middleware response
+	 * Check if api url does return middleware response
 	 */
 	private function isMiddleware($api) {
 		$response = $this->client->get($api . 'data.json', [
