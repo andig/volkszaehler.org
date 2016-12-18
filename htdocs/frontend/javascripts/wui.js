@@ -150,17 +150,17 @@ vz.wui.addEntity = function(entity) {
 
 	// load data including children
 	var queue = [];
-	queue.push(entity.loadData());
-	entity.eachChild(function(child) {
-		queue.push(child.loadData());
-	}, true); // recursive
+	queue.push(
+		entity.eachChild(function(child) { // recursive
+			queue.push(child.loadData());
+		}, true).loadData()
+	);
 
 	$.when.apply($, queue).then(function() {
 		vz.wui.drawPlot();
-		entity.loadTotalConsumption();
-		entity.eachChild(function(child) {
+		entity.eachChild(function(child) { // recursive
 			child.loadTotalConsumption();
-		}, true); // recursive
+		}, true).loadTotalConsumption();
 	});
 };
 
@@ -283,7 +283,7 @@ vz.wui.dialogs.init = function() {
 		});
 
 		vz.load({
-			controller: (def.model == 'Volkszaehler\\Model\\Channel') ? 'channel' : 'aggregator',
+			controller: (def.model !== 'Volkszaehler\\Model\\Aggregator') ? 'channel' : 'aggregator',
 			url: $('#entity-create-middleware').val(),
 			data: properties,
 			method: 'POST'
@@ -299,7 +299,7 @@ vz.wui.dialogs.init = function() {
 			}
 			finally {
 				$('#entity-add').dialog('close');
-				
+
 				// show the channel UUID to the user
 				$('<div>').append(
 					$('<p>').html(entity.uuid)
@@ -325,6 +325,56 @@ vz.wui.dialogs.init = function() {
 	$('button[name=entity-add]').unbind('click', this.init);
 	$('button[name=entity-add]').click(function() {
 		$('#entity-add.dialog').dialog('open');
+	});
+};
+
+/**
+ * Initialize authorization dialog
+ */
+vz.wui.initAuth = function() {
+	$('#authorization').dialog({
+		title: unescape('Login'),
+		width: 650,
+		modal: true,
+		autoOpen: false,
+		resizable: false,
+		open: function() {
+			var middleware = $('#authorization').data('middleware');
+			$('#authorization .middleware').text(vz.getMiddleware(middleware).title);
+			$('#authorization input[name=username]').select();
+		}
+	});
+
+	$('#authorization').submit(function(e) {
+		var middleware = $('#authorization').data('middleware');
+		var args = {
+			url: middleware + '/auth.json',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify({
+				username: $('#authorization input[name=username]').val(),
+				password: $('#authorization input[name=password]').val()
+			})
+		};
+
+		$.ajax(args).then(
+			function(json) {
+				$('#authorization').dialog('close');
+
+				if (json.authtoken) {
+					vz.setMiddlewareAuth(middleware, json.authtoken);
+					window.location.reload(false);	// reload
+				}
+			},
+			function(xhr) {
+				vz.wui.dialogs.middlewareException({
+					type: "Login Failure",
+					message: xhr.statusText
+				}, xhr.requestUrl);
+			}
+		);
+
+		return false;
 	});
 };
 
@@ -493,86 +543,32 @@ vz.wui.initEvents = function() {
 			vz.entities.loadData().done(vz.wui.drawPlot);
 		});*/
 		.bind("plothover", function (event, pos, item) {
-			// $('#title').html("pos "+pos.x + " - event-data: "+event.data);
-			if (!vz.entities || !vz.entities.length)
-				return; // no channels -> nothing to do
-			vz.wui.latestPosition = pos;
-			if (!vz.wui.updateLegendTimeout)
-				vz.wui.updateLegendTimeout = setTimeout(vz.wui.updateLegend, 50);
-		});
-};
-
-/**
- * Update legend on move hover
- */
-vz.wui.updateLegend = function() {
-	vz.wui.updateLegendTimeout = null;
-	var pos = vz.wui.latestPosition;
-
-	var axes = vz.plot.getAxes();
-	if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
-		pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
-		return;
-
-	var i, j, dataset = vz.plot.getData();
-	for (i = 0; i < dataset.length; ++i) {
-		var series = dataset[i];
-
-		if (!series.data.length)
-			continue;
-
-		// find the nearest points, x-wise
-		for (j = 0; j < series.data.length; ++j)
-			if (series.data[j][0] > pos.x)
-				break;
-		var y;
-		if (series.lines.steps) {
-			var p = series.data[j-1];
-			if (p)
-				y = p[1];
-			else
-				y = null;
-		} else if (series.lines.states) {
-			y = null;
-			if (j < series.data.length) {
-				var p3 = series.data[j];
-				if (p3)
-					y = p3[1];
+			vz.options.plot.hoverPos = pos;
+			if (vz.entities && vz.entities.length && !vz.wui.updateLegendTimeout) {
+				vz.wui.updateLegendTimeout = setTimeout(function() {
+					if (vz.wui.updateLegendTimeout) {
+						vz.wui.updateLegend(vz.options.plot.hoverPos, item);
+					}
+				}, 50);
 			}
-		} else { // no steps -> interpolate
-			var p1 = series.data[j - 1], p2 = series.data[j];
-			if (p1 == null || p2 == null) // jshint ignore:line
-				y = null;
-			else
-				y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
-		}
-
-		var legend = $('.legend .legendLabel');
-		if (y === null) {
-			legend.eq(i).text(series.title);
-		} else {
-			// use plot wrapper instead of `new Date()` for timezone support
-			var d = $.plot.dateGenerator(pos.x, vz.options.plot.xaxis);
-			var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-			var format = (delta > 1*24*3600*1000) ? '%d.%m.%y - %H:%M' : '%H:%M:%S';
-			legend.eq(i).text(series.title + ": " + $.plot.formatDate(d,format) + " - " + vz.wui.formatNumber(y, series.unit));
-		}
-	}
-
-	// update opaque background sizing
-	$('.legend > div').css({ width: $('.legend table').css('width') });
+		})
+		.bind("plotleave", vz.wui.plotLeave);
 };
 
 /**
  * Move & zoom in the plotting area
+ *
+ * @param ev either click event or literal button event value
  */
-vz.wui.handleControls = function () {
+vz.wui.handleControls = function (ev) {
 	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
 	var middle = vz.options.plot.xaxis.min + delta/2;
 	var d = new Date(middle);
 	var now = new Date().getTime();
 
-	switch($(this).val()) {
+	var control = ev.target ? $(ev.target).val() : ev;
+
+	switch (control) {
 		case 'move-last':
 			vz.wui.zoom(now-delta, now);
 			break;
@@ -649,6 +645,26 @@ vz.wui.handleControls = function () {
 };
 
 /**
+ * Timestamp rounding for group mode
+ */
+vz.wui.adjustTimestamp = function(ts, mode) {
+	var date = new Date(ts);
+	switch (mode || ['hour', 'day', 'month', 'year'].indexOf(vz.options.mode)) {
+		case 3:	date.setMonth(0); // year
+		/* falls through */
+		case 2:	date.setMonth(date.getMonth(), 1); // month
+		/* falls through */
+		case 1:	date.setHours(0); // day
+		/* falls through */
+		case 0:	date.setMinutes(0); // hour
+		/* falls through */
+	default:
+		date.setSeconds(0, 0); // minutes
+	}
+	return date.getTime();
+};
+
+/**
  * Zoom plot to target timeframe
  */
 vz.wui.zoom = function(from, to) {
@@ -661,6 +677,11 @@ vz.wui.zoom = function(from, to) {
 	} else {
 		vz.options.plot.xaxis.min = from;
 		vz.options.plot.xaxis.max = to;
+	}
+
+	if (vz.wui.isConsumptionMode()) {
+		vz.options.plot.xaxis.min = vz.wui.adjustTimestamp(vz.options.plot.xaxis.min);
+		vz.options.plot.xaxis.max = vz.wui.adjustTimestamp(vz.options.plot.xaxis.max);
 	}
 
 	vz.wui.tmaxnow = (vz.options.plot.xaxis.max >= (now - 1000));
@@ -728,46 +749,62 @@ vz.wui.clearTimeout = function(text) {
 /**
  * Determine matching SI unit prefix
  */
-vz.wui.formatNumber = function(number, unit, prefix) {
-	prefix = prefix || true; // default on
-	var siPrefixes = ['k', 'M', 'G', 'T'];
-	var siIndex = 0,
-			maxIndex = (typeof prefix == 'string') ? siPrefixes.indexOf(prefix)+1 : siPrefixes.length;
+vz.wui.scaleNumberAndUnit = function(number, unit, maxPrefix) {
+	var siPrefixes = ['', 'k', 'M', 'G', 'T'],
+			siIndex = 0,
+			scaler = 1;
+	var siMaxIndex = maxPrefix ? siPrefixes.indexOf(maxPrefix) :
+			(maxPrefix === false ? 0 : siPrefixes.length-1);
 
 	// flow unit or air pressure?
 	if (['h', 'l', 'm3', 'm^3', 'm³', 'l/h', 'm3/h', 'm/h^3', 'm³/h', '°C', 'K', 'hPa', 'cd', 'km/h', 'u/min', 'rpm'].indexOf(unit) >= 0) {
 		// don't scale...
-		maxIndex = -1;
+		siMaxIndex = 0;
 
 		// ...unless for l->m3 conversion
-		if (Math.abs(number) > 1000 && (unit == 'l' || unit == 'l/h')) {
+		if ((unit == 'l' || unit == 'l/h') && Math.abs(number) > 1000) {
 			unit = 'm³' + unit.substring(1);
 			number /= 1000;
 		}
 	}
 
-	while (prefix && Math.abs(number) > 1000 && siIndex < maxIndex) {
+	while (siIndex < siMaxIndex && Math.abs(number) > 1000) {
+		scaler /= 1000;
 		number /= 1000;
 		siIndex++;
 	}
 
-	// avoid infinities/NaN
-	if (number < 0 || number > 0) {
-		var precision = Math.max(0, vz.options.precision - Math.floor(Math.log(Math.abs(number))/Math.LN10));
-		number = Math.round(number * Math.pow(10, precision)) / Math.pow(10, precision); // rounding
+	return {
+		unit: unit,
+		prefix: siPrefixes[siIndex],
+		number: number,
+		scaler: scaler
+	};
+};
+
+/**
+ * Number formatting
+ *
+ * vz.options.precision determines precision for single-digit numbers
+ * Numbers with more significant digits are displayed at lower precision
+ *
+ * @param number to round
+ * @param SI unit to use- may be adjusted in case of l/m3
+ * @param maximum SI unit prefix to use (or false to disable SI scaling)
+ */
+vz.wui.formatNumber = function(number, unit, maxPrefix) {
+	// determine si unit and adjust value
+	var si = vz.wui.scaleNumberAndUnit(number, unit, maxPrefix);
+
+	// precision, +1 digit for numbers < 1.0
+	var precision = (Math.abs(si.number) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
+		 Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
+
+	// rounding, si prefix and unit
+	number = si.number.toFixed(precision);
+	if (si.unit || si.prefix) {
+		number += ' ' + si.prefix + si.unit;
 	}
-
-	// avoid almost zero
-	if (Math.abs(number) < Math.pow(10, -vz.options.precision)) {
-		number = 0;
-	}
-
-	if (prefix)
-		number += (siIndex > 0) ? ' ' + siPrefixes[siIndex-1] : ' ';
-	else
-		number += ' ';
-
-	if (unit) number += unit;
 
 	return number;
 };
@@ -785,154 +822,6 @@ vz.wui.formatConsumptionUnit = function(unit) {
 	}
 
 	return unit;
-};
-
-/**
- * Flot tickFormatter extension to apply axis labels
- * Copied from jquery.flot.js
- */
-vz.wui.tickFormatter = function (value, axis, tickIndex, ticks) {
-	// return label instead of last tick
-	if (ticks && tickIndex === ticks.length-1 && axis.options.axisLabel) {
-		return '[' + axis.options.axisLabel + ']';
-	}
-
-	var factor = axis.tickDecimals ? Math.pow(10, axis.tickDecimals) : 1;
-	var formatted = "" + Math.round(value * factor) / factor;
-
-	if (axis.tickDecimals !== null) {
-		var decimal = formatted.indexOf(".");
-		var precision = decimal == -1 ? 0 : formatted.length - decimal - 1;
-		if (precision < axis.tickDecimals) {
-			return (precision ? formatted : formatted + ".") + ("" + factor).substr(1, axis.tickDecimals - precision);
-		}
-	}
-
-	return formatted;
-};
-
-/**
- * Update headline on zoom
- */
-vz.wui.updateHeadline = function() {
-	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-	var format = '%a %e. %b %Y';
-
-	if (delta < 3*24*3600*1000) format += ' %H:%M'; // under 3 days
-	if (delta < 5*60*1000) format += ':%S'; // under 5 minutes
-
-	// timezone-aware dates if timezon-js is inlcuded
-	var from = $.plot.dateGenerator(vz.options.plot.xaxis.min, vz.options.plot.xaxis);
-	var to = $.plot.dateGenerator(vz.options.plot.xaxis.max, vz.options.plot.xaxis);
-
-	from = $.plot.formatDate(from, format, vz.options.monthNames, vz.options.dayNames, true);
-	to = $.plot.formatDate(to, format, vz.options.monthNames, vz.options.dayNames, true);
-	$('#title').html(from + ' - ' + to);
-};
-
-/**
- * Draws plot to container
- */
-vz.wui.drawPlot = function () {
-	vz.options.interval = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-	vz.wui.updateHeadline();
-
-	// assign entities to axes
-	if (vz.options.plot.axesAssigned === false) {
-		vz.entities.each(function(entity) {
-			entity.assignAxis();
-		}, true);
-
-		vz.options.plot.axesAssigned = true;
-	}
-
-	var series = [], index = 0;
-	vz.entities.each(function(entity) {
-		if (entity.active && entity.definition && entity.definition.model == 'Volkszaehler\\Model\\Channel' &&
-				entity.data && entity.data.tuples && entity.data.tuples.length > 0) {
-			var i, maxTuples = 0;
-
-			// work on copy here to be able to redraw
-			var tuples = entity.data.tuples.map(function(t) {
-				return t.slice(0);
-			});
-
-
-			var style = vz.options.style || entity.style;
-			var fillstyle = parseFloat(vz.options.fillstyle || entity.fillstyle);
-			var linewidth = parseFloat(vz.options.linewidth || vz.options[index == vz.wui.selectedChannel ? 'lineWidthSelected' : 'lineWidthDefault']);
-
-			// mangle data for "steps" curves by shifting one ts left ("step-before")
-			if (style == "steps") {
-				tuples.unshift([entity.data.from, 1, 1]); // add new first ts
-				for (i=0; i<tuples.length-1; i++) {
-					tuples[i][1] = tuples[i+1][1];
-				}
-			}
-
-			// remove number of datapoints from each tuple to avoid flot fill error
-			if (fillstyle || entity.gap) {
-				for (i=0; i<tuples.length; i++) {
-					maxTuples = Math.max(maxTuples, tuples[i][2]);
-					delete tuples[i][2];
-				}
-			}
-
-			var serie = {
-				data: tuples,
-				color: entity.color,
-				label: entity.title,
-				title: entity.title,
-				unit : entity.definition.unit,
-				lines: {
-					show:       style == 'lines' || style == 'steps' || style == 'states',
-					steps:      style == 'steps' || style == 'states',
-					fill:       fillstyle !== undefined ? fillstyle : false,
-					lineWidth:  linewidth
-				},
-				points: {
-					show:       style == 'points'
-				},
-				yaxis: entity.assignedYaxis
-			};
-
-			// disable interpolation when data has gaps
-			if (entity.gap) {
-				var minGapWidth = (entity.data.to - entity.data.from) / tuples.length;
-				serie.xGapThresh = Math.max(entity.gap * 1000 * maxTuples, minGapWidth);
-				vz.options.plot.xaxis.insertGaps = true;
-			}
-
-			// use this index for setting vz.wui.selectedChannel
-			entity.index = index++;
-
-			series.push(serie);
-		}
-	}, true);
-
-	if (series.length === 0) {
-		$('#overlay').html('<img src="images/empty.png" alt="no data..." /><p>nothing to plot...</p>');
-		series.push({}); // add empty dataset to show axes
-	}
-	else {
-		$('#overlay').empty();
-	}
-
-	vz.plot = $.plot($('#flot'), series, vz.options.plot);
-
-	// remember legend container for updating
-	vz.wui.legend = $('.legend .legendLabel');
-
-	// disable automatic refresh if we are in past
-	if (vz.options.refresh) {
-		if (vz.wui.tmaxnow) {
-			vz.wui.setTimeout();
-		} else {
-			vz.wui.clearTimeout('(suspended)');
-		}
-	} else {
-		vz.wui.clearTimeout();
-	}
 };
 
 /*
