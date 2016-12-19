@@ -120,8 +120,8 @@ Entity.prototype.getUnit = function() {
  * Get entity unit
  */
 Entity.prototype.getUnitForMode = function() {
-	return this.isConsumptionMode() 
-		? vz.wui.formatConsumptionUnit(this.getUnit()) 
+	return this.isConsumptionMode()
+		? vz.wui.formatConsumptionUnit(this.getUnit())
 		: this.getUnit();
 };
 
@@ -340,8 +340,8 @@ Entity.prototype.loadData = function() {
 			group: this.isConsumptionMode()
 				? vz.options.mode // mode contains the desired grouping
 				: vz.entities.speedupFactor(),
-			options: this.isConsumptionMode() 
-				? 'consumption' 
+			options: this.isConsumptionMode()
+				? 'consumption'
 				: vz.options.options
 		}
 	}).done(function(json) {
