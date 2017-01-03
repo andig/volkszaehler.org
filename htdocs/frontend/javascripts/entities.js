@@ -90,8 +90,6 @@ vz.entities.loadDetails = function() {
  * Load JSON data from the middleware
  */
 vz.entities.loadData = function() {
-	$('#overlay').html('<img src="images/loading.gif" alt="loading..." /><p>loading...</p>');
-
 	var queue = [];
 	vz.entities.each(function(entity) {
 		queue.push(entity.loadData());
@@ -123,7 +121,7 @@ vz.entities.loadTotalConsumption = function() {
  */
 vz.entities.speedupFactor = function() {
 	var	group = vz.options.group,
-			delta = (vz.options.plot.xaxis.max - vz.options.plot.xaxis.min) / 3.6e6;
+		delta = (vz.options.plot.xaxis.max - vz.options.plot.xaxis.min) / 3.6e6;
 
 	// explicit group set via url?
 	if (group !== undefined)
@@ -149,6 +147,17 @@ vz.entities.each = function(cb, recursive) {
 			this[i].eachChild(cb, true);
 		}
 	}
+};
+
+/**
+ * Iterate each active channel containing data
+ */
+vz.entities.eachActiveChannel = function(cb) {
+	this.each(function(entity) {
+		if (entity.hasData() && entity.data && entity.data.tuples && entity.data.tuples.length > 0) {
+			cb(entity);
+		}
+	}, true);
 };
 
 /**
@@ -188,14 +197,30 @@ vz.entities.dropTableHandler = function(from, to, child, clone) {
 		vz.wui.dialogs.exception(e);
 	}
 	finally {
-		$.when.apply($, queue).done(function() { // wait for middleware
-			var q = [];
-			if (from)
-				q.push(from.loadDetails());
-			if (to)
-				q.push(to.loadDetails());
+		// ...after updating entities
+		$.when.apply($, queue).done(function() {
+			var q = [], p = [];
+			if (from) {
+				// ...load new entity details
+				q.push(from.loadDetails().done(function() {
+					// ...and finally refresh data
+					p.push(from.eachChild(function(child) {
+						p.push(child.loadData());
+					}, true).loadData());
+				}));
+			}
+			if (to) {
+				q.push(to.loadDetails().done(function() {
+					p.push(to.eachChild(function(child) {
+						p.push(child.loadData());
+					}, true).loadData());
+				}));
+			}
 
-			$.when.apply($, q).done(vz.entities.showTable);
+			$.when.apply($, q).done(function() {
+				vz.entities.showTable();
+				$.when.apply($, p).done(vz.wui.drawPlot);
+			});
 		});
 	}
 };
@@ -283,17 +308,34 @@ vz.entities.showTable = function() {
 	});
 
 	// make visible that a row is clicked
-	$('#entity-list table tbody tr').mousedown(function() {
-		var entity = $(this).data('entity');
-		var selected = $('tr.selected').data('entity');
+	$('#entity-list table tbody tr').click(function(ev) {
+		var selected = $(this).data('entity').selected;
 
-		$('tr.selected').removeClass('selected'); // deselect currently selected rows
-		vz.wui.selectedChannel = null;
-
-		if (entity !== selected) {
-			$(this).addClass('selected');
-			vz.wui.selectedChannel = entity.index;
+		if (ev.ctrlKey) {
+			// partially remove previous selection
+			if (selected) {
+				$(this).removeClass('selected');
+				$(this).data('entity').selected = false;
+			}
 		}
+		else {
+			// remove previous selection
+			$('tr.selected').each(function(idx, el) {
+				$(el).removeClass('selected');
+				$(el).data('entity').selected = false;
+			});
+		}
+
+		// add new selection
+		if (!selected) {
+			$(this).addClass('selected');
+			$(this).data('entity').eachChild(function(child) {
+				$('#entity-' + child.uuid).addClass('selected');
+				// $('#entity-' + child.uuid + '.child-of-entity-' + child.parent.uuid).addClass('selected');
+				child.selected = true;
+			}, true).selected = true;
+		}
+
 		vz.wui.drawPlot();
 	});
 
@@ -338,16 +380,12 @@ vz.entities.inheritVisibility = function() {
  * @todo move to Entity class
  */
 vz.entities.updateTableColumnVisibility = function() {
-	// hide costs if empty for all rows
-	$('.cost').css({
-		display: ($('tbody .cost').filter(function() {
-								return (+$(this).data('cost') || 0) > 0;
-						 }).get().length === 0) ? 'none' : ''
-	});
-	// hide total consumption if empty for all rows
-	$('.total').css({
-		display: ($('tbody .total').filter(function() {
-								return (+$(this).data('total') || 0) > 0;
-						 }).get().length === 0) ? 'none' : ''
+	// show/hide empty columns
+	['consumption', 'cost', 'total'].forEach(function(column) {
+		$('.' + column).css({
+			display: ($('tbody .' + column).filter(function() {
+									return (+$(this).data(column) || 0) > 0;
+							 }).get().length === 0) ? 'none' : ''
+		});
 	});
 };
