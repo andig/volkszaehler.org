@@ -801,7 +801,12 @@ vz.wui.formatNumber = function(number, unit, maxPrefix) {
 
 	// precision, +1 digit for numbers < 1.0
 	var precision = (Math.abs(si.number) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
-		 Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
+		Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
+
+	// apply maximum precision e.g. for °C values
+	if (vz.options.maxPrecision[unit] !== undefined) {
+		precision = Math.min(vz.options.maxPrecision[unit], precision);
+	}
 
 	// rounding, si prefix and unit
 	number = si.number.toFixed(precision);
