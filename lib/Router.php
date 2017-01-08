@@ -71,8 +71,7 @@ class Router implements HttpKernelInterface {
 		'POST'			=> 'add',
 		'DELETE'		=> 'delete',
 		'GET'			=> 'get',
-		'PATCH'			=> 'edit',
-		'PULL'			=> 'edit'		// not REST-conform
+		'PATCH'			=> 'edit'
 	);
 
 	/**
@@ -203,6 +202,13 @@ class Router implements HttpKernelInterface {
 			}
 		}
 
+		// map GET operation to HTTP method for use in firewall rules
+		if ($operation = $request->query->get('operation')) {
+			$request->query->remove('operation');
+			$method = array_flip(self::$operationMapping)[strtolower($operation)];
+			$request->setMethod($method);
+		}
+
 		// firewall
 		$firewallAction = $this->firewall($request);
 
@@ -229,11 +235,7 @@ class Router implements HttpKernelInterface {
 	 * Example: http://sub.domain.local/middleware.php/channel/550e8400-e29b-11d4-a716-446655440000/data.json?operation=edit&title=New Title
 	 */
 	function handler(Request $request, $context, $uuid) {
-		// get controller operation
-		if (null === ($operation = $request->query->get('operation'))) {
-			$operation = self::$operationMapping[$request->getMethod()];
-		}
-
+		$operation = self::$operationMapping[$request->getMethod()];
 		$class = self::$controllerMapping[$context];
 		$controller = new $class($request, $this->em, $this->view);
 
