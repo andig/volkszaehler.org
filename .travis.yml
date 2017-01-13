@@ -81,6 +81,7 @@ before_script:
     - "sed -i \"s/user: .*/user: $USER/\" etc/config.yaml"
     - "sed -i \"s/password: .*/password: $PASSWORD/\" etc/config.yaml"
     - "sed -i \"s/dbname: .*/dbname: $DATABASE/\" etc/config.yaml"
+    - "sed -i \"s/secretkey: .*/secretkey: '08154711'/\" etc/config.yaml"
     - cat etc/config.yaml
 
     # create database
