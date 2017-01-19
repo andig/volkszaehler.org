@@ -481,9 +481,9 @@ Entity.prototype.showDetails = function() {
 		}
 	}).select();
 
- 	$('#entity-info tr').remove();
+	$('#entity-info tr').remove();
 
- 	addRow = function(key, value) {
+	addRow = function(key, value) {
 		$('#entity-info table').append(
 			$('<tr>').addClass('general')
 			.append($('<td>').addClass('key').text(key))
