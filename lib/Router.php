@@ -41,7 +41,7 @@ use Volkszaehler\Controller;
 /**
  * Router
  *
- * This class povides routing to incoming requests to controllers
+ * This class routes incoming requests to controllers
  *
  * @package default
  * @author Steffen Vogel <info@steffenvogel.de>
@@ -122,10 +122,10 @@ class Router implements HttpKernelInterface {
 	 * Source: Symfony\Component\HttpKernel\HttpKernel
 	 *
 	 * @param Request $request A Request instance
-	 * @param int     $type    The type of the request (for Symfony compatibility, not implemented)
-	 * @param bool    $catch   Whether to catch exceptions or not
-	 *
+	 * @param int $type The type of the request (for Symfony compatibility, not implemented)
+	 * @param bool $catch Whether to catch exceptions or not
 	 * @return Response A Response instance
+	 * @throws \Exception
 	 */
 	public function handle(Request $request, $type = HttpKernelInterface::MASTER_REQUEST, $catch = true) {
 		try {
@@ -145,7 +145,7 @@ class Router implements HttpKernelInterface {
 				throw $e;
 			}
 
-			return $this->handleException($e, $request, $type);
+			return $this->handleException($e, $request);
 		}
 	}
 
@@ -153,9 +153,9 @@ class Router implements HttpKernelInterface {
 	 * Determine context, format and uuid of the raw request
 	 *
 	 * @param Request $request A Request instance
-	 * @param int     $type    The type of the request (for Symfony compatibility, not implemented)
-	 *
+	 * @param int $type The type of the request (for Symfony compatibility, not implemented)
 	 * @return Response A Response instance
+	 * @throws \Exception
 	 */
 	public function handleRaw(Request $request, $type = HttpKernelInterface::MASTER_REQUEST) {
 		// workaround for https://github.com/symfony/symfony/issues/13617
@@ -240,6 +240,10 @@ class Router implements HttpKernelInterface {
 	 * Processes the request
 	 *
 	 * Example: http://sub.domain.local/middleware.php/channel/550e8400-e29b-11d4-a716-446655440000/data.json?operation=edit&title=New Title
+	 * @param Request $request
+	 * @param $context
+	 * @param $uuid
+	 * @return Response
 	 */
 	function handler(Request $request, $context, $uuid) {
 		$operation = self::$operationMapping[$request->getMethod()];
@@ -256,13 +260,11 @@ class Router implements HttpKernelInterface {
 	 * Handles an exception by trying to convert it to a Response
 	 * Source: Symfony\Component\HttpKernel\HttpKernel
 	 *
-	 * @param \Exception $e       An \Exception instance
-	 * @param Request    $request A Request instance
-	 * @param int        $type    The type of the request (for Symfony compatibility, not implemented)
-	 *
+	 * @param \Exception $e An \Exception instance
+	 * @param Request $request A Request instance
 	 * @return Response A Response instance
 	 */
-	private function handleException(\Exception $e, $request, $type) {
+	private function handleException(\Exception $e, Request $request) {
 		if (null === $this->view) {
 			$this->view = new View\JSON($request); // fallback view instantiates error handler
 		}
@@ -298,8 +300,8 @@ class Router implements HttpKernelInterface {
 	/**
 	 * Factory method for Doctrine EntityManager
 	 *
-	 * @todo add other caching drivers (memcache, xcache)
-	 * @todo put into static class? singleton? function or state class?
+	 * @param bool $admin
+	 * @return ORM\EntityManager
 	 */
 	public static function createEntityManager($admin = FALSE) {
 		$config = new ORM\Configuration;

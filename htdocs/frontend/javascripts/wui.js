@@ -162,9 +162,10 @@ vz.wui.addEntity = function(entity) {
 
 	$.when.apply($, queue).then(function() {
 		vz.wui.drawPlot();
+		entity.loadTotalConsumption().done(vz.entities.updateTableColumnVisibility);
 		entity.eachChild(function(child) { // recursive
 			child.loadTotalConsumption();
-		}, true).loadTotalConsumption();
+		}, true);
 	});
 };
 
@@ -801,7 +802,7 @@ vz.wui.formatNumber = function(number, unit, maxPrefix) {
 
 	// precision, +1 digit for numbers < 1.0
 	var precision = (Math.abs(si.number) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
-		Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
+			Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
 
 	// apply maximum precision e.g. for °C values
 	if (vz.options.maxPrecision[unit] !== undefined) {

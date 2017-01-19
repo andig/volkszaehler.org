@@ -23,7 +23,6 @@
 
 namespace Volkszaehler\Interpreter;
 
-use Volkszaehler\Util;
 use Volkszaehler\Model;
 use Volkszaehler\Interpreter\SQL;
 use Doctrine\ORM;
@@ -72,10 +71,14 @@ abstract class Interpreter implements \IteratorAggregate {
 	/**
 	 * Constructor
 	 *
-	 * @param Channel $channel
-	 * @param EntityManager $em
+	 * @param Model\Channel $channel
+	 * @param ORM\EntityManager $em
 	 * @param integer $from timestamp in ms since 1970
 	 * @param integer $to timestamp in ms since 1970
+	 * @param null $tupleCount
+	 * @param null $groupBy
+	 * @param array $options
+	 * @throws \Exception
 	 */
 	public function __construct(Model\Channel $channel, ORM\EntityManager $em, $from, $to, $tupleCount = null, $groupBy = null, $options = array()) {
 		$this->channel = $channel;
@@ -151,7 +154,8 @@ abstract class Interpreter implements \IteratorAggregate {
 	/**
 	 * Check if option is specified
 	 *
-	 * @param  string  $str option name
+	 * @param  string $str option name
+	 * @return bool
 	 */
 	protected function hasOption($str) {
 		return in_array($str, $this->options);
@@ -191,10 +195,10 @@ abstract class Interpreter implements \IteratorAggregate {
 	}
 
 	/**
-	 * Get database data
+	 * Get raw data from database
 	 *
-	 * @param string|integer $groupBy
-	 * @return Volkszaehler\DataIterator
+	 * @return DataIterator
+	 * @throws \Exception
 	 */
 	protected function getData() {
 		if (!$this->hasOption('exact')) {
@@ -278,6 +282,7 @@ abstract class Interpreter implements \IteratorAggregate {
 	 * @author Andreas Götz <cpuidle@gmx.de>
 	 * @param string $expression sql parameter
 	 * @return string grouped sql expression
+	 * @throws \Exception
 	 */
 	public static function groupExprSQL($expression) {
 		throw new \Exception('Derived classes must implement static function groupExprSQL.');
@@ -321,11 +326,10 @@ abstract class Interpreter implements \IteratorAggregate {
 	 * Parses a timestamp
 	 *
 	 * @link http://de3.php.net/manual/en/datetime.formats.php
-	 * @todo add millisecond resolution
 	 *
 	 * @param mixed $string int, float or string to parse
-	 * @param float $now in ms since 1970
 	 * @return float
+	 * @throws \Exception
 	 */
 	public static function parseDateTimeString($string) {
 		if (ctype_digit((string)$string)) { // handling as ms timestamp
