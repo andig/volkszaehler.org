@@ -162,7 +162,7 @@ vz.wui.tickGenerator = function (axis) {
 		++i;
 	} while (v < axis.max && v != prev);
 	if (max !== undefined && v > max)
-	 	ticks.push(v);
+		ticks.push(v);
 	return ticks;
 };
 
@@ -252,7 +252,6 @@ vz.wui.drawPlot = function () {
 			for (i=0; i<tuples.length-1; i++) {
 				tuples[i][1] = tuples[i+1][1];
 			}
-			tuples.pop();	// remove last, duplicate tuple
 		}
 
 		// remove number of datapoints from each tuple to avoid flot fill error

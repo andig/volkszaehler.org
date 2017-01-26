@@ -48,8 +48,9 @@ Middleware.prototype.loadEntities = function() {
 		this.public = [];
 
 		json.entities.forEach(function(json) {
-			var entity = new Entity(json, this.url);
-			this.public.push(entity);
+			// fix https://github.com/volkszaehler/volkszaehler.org/pull/560
+			json.active = false;
+			this.public.push(new Entity(json, this.url));
 		}, this);
 		this.public.sort(Entity.compare);
 
