@@ -159,7 +159,6 @@ vz.load.loadHandler = function(args, skipDefaultErrorHandling) {
 			vz.wui.requests.issued = vz.wui.requests.completed = 0;
 		}
 	}).then(
-	return $.ajax(args).then(
 		// success - no changes needed
 		null,
 		// error
