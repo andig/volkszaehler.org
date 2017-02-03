@@ -39,7 +39,7 @@ $request = Request::createFromGlobals();
 
 // fix https://bugs.php.net/bug.php?id=72915
 if (!$request->headers->get('Authorization') && function_exists('apache_request_headers')) {
-	$nativeHeaders = apache_request_headers();	
+	$nativeHeaders = apache_request_headers();
 	if (isset($nativeHeaders['Authorization'])) {
 		$request->headers->set('Authorization', $nativeHeaders['Authorization']);
 	}
