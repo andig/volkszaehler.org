@@ -80,7 +80,7 @@ Entity.prototype.parseJSON = function(json) {
 		}
 	}
 
-	if (this.active === undefined) {
+	if (this.active === undefined || this.active === null) {
 		this.active = true; // activate by default
 	}
 
@@ -315,7 +315,7 @@ Entity.prototype.loadDetails = function(skipDefaultErrorHandling) {
 		context: this
 	}, skipDefaultErrorHandling).done(function(json) {
 		// fix https://github.com/volkszaehler/volkszaehler.org/pull/560
-		delete json.active;
+		delete json.entity.active;
 		this.parseJSON(json.entity);
 	});
 };
@@ -613,6 +613,7 @@ Entity.prototype.getDOMRow = function(parent) {
 				.bind('click', this, function(event) {
 					var entity = event.data;
 					entity.activate($(this).prop('checked'), null, true).done(vz.wui.drawPlot);
+					vz.entities.saveCookie();
 					event.stopPropagation();
 				})
 			)

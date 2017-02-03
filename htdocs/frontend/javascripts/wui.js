@@ -239,9 +239,10 @@ vz.wui.dialogs.init = function() {
 	$('#entity-public input[type=button]').click(function() {
 		// clone entity from data attribute and activate it
 		var entity = $.extend({}, $('#entity-public-entity option:selected').data('entity'));
-		entity.active = true;
 		try {
 			entity.cookie = Boolean($('#entity-public-cookie').prop('checked'));
+			entity.active = true;
+			entity.subscribe();
 			vz.wui.addEntity(entity);
 		}
 		catch (e) {
@@ -527,6 +528,7 @@ vz.wui.zoomToPartialUpdate = function(to) {
 vz.wui.initEvents = function() {
 	$('#plot')
 		.bind("plotselected", function (event, ranges) {
+			vz.wui.period = null;
 			vz.wui.zoom(ranges.xaxis.from, ranges.xaxis.to);
 		})
 		/*.bind('plotpan', function (event, plot) {
@@ -566,85 +568,103 @@ vz.wui.initEvents = function() {
  * @param ev either click event or literal button event value
  */
 vz.wui.handleControls = function(action) {
-	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-	var middle = vz.options.plot.xaxis.min + delta/2;
-	var d = new Date(middle);
-	var now = new Date().getTime();
+	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min,
+			middle = vz.options.plot.xaxis.min + delta/2,
+			startOfPeriodLocale;
 
 	var control = typeof action == 'string' ? action : $(this).val();
 
 	switch (control) {
 		case 'move-last':
-			vz.wui.zoom(now-delta, now);
+			startOfPeriodLocale = vz.wui.period == 'week' ? 'isoweek' : vz.wui.period;
+			vz.wui.zoom(
+				/* jshint laxbreak: true */
+				vz.wui.period && moment(vz.options.plot.xaxis.min)
+					.startOf(startOfPeriodLocale)
+					.isSame(moment(vz.options.plot.xaxis.min))
+					? moment().startOf(startOfPeriodLocale).valueOf()
+					: moment().valueOf() - delta,
+				moment().valueOf()
+			);
 			break;
 		case 'move-back':
-			vz.wui.zoom(
-				vz.options.plot.xaxis.min - delta,
-				vz.options.plot.xaxis.max - delta
-			);
+			if (vz.wui.period) {
+				vz.wui.zoom(
+					moment(vz.options.plot.xaxis.min).subtract(1, vz.wui.period).valueOf(),
+					vz.options.plot.xaxis.min
+				);
+			}
+			else {
+				vz.wui.zoom(
+					vz.options.plot.xaxis.min - delta,
+					vz.options.plot.xaxis.max - delta
+				);
+			}
 			break;
 		case 'move-forward':
-			vz.wui.zoom(
-				vz.options.plot.xaxis.min + delta,
-				vz.options.plot.xaxis.max + delta
-			);
+			// don't move into the future
+			if (vz.wui.tmaxnow)
+				break;
+			if (vz.wui.period) {
+				vz.wui.zoom(
+					vz.options.plot.xaxis.max,
+					Math.min(
+						// prevent adjusting left boundary in zoom function
+						moment(vz.options.plot.xaxis.max).add(1, vz.wui.period).valueOf(),
+						moment().valueOf()
+					)
+				);
+			}
+			else {
+				vz.wui.zoom(
+					vz.options.plot.xaxis.min + delta,
+					vz.options.plot.xaxis.max + delta
+				);
+			}
 			break;
 		case 'zoom-reset':
+			vz.wui.period = null;
 			vz.wui.zoom(
 				middle - vz.options.defaultInterval/2,
 				middle + vz.options.defaultInterval/2
 			);
 			break;
 		case 'zoom-in':
+			vz.wui.period = null;
 			if (vz.wui.tmaxnow)
-				vz.wui.zoom(now - delta/2, now);
+				vz.wui.zoom(moment().valueOf() - delta/2, moment().valueOf());
 			else
 				vz.wui.zoom(middle - delta/4, middle + delta/4);
 			break;
 		case 'zoom-out':
+			vz.wui.period = null;
 			vz.wui.zoom(
 				middle - delta,
 				middle + delta
 			);
 			break;
 		case 'zoom-hour':
-			if (vz.wui.tmaxnow)
-				vz.wui.zoom(now - 3600*1000, now);
-			else
-				vz.wui.zoom(
-					new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()).getTime(),
-					new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()+1).getTime()
-				);
-			break;
 		case 'zoom-day':
-			if (vz.wui.tmaxnow)
-				vz.wui.zoom(now - 24*3600*1000, now);
-			else
-				vz.wui.zoom(
-					new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
-					new Date(d.getFullYear(), d.getMonth(), d.getDate()+1).getTime()
-				);
-			break;
 		case 'zoom-week':
-			if (vz.wui.tmaxnow)
-				vz.wui.zoom(now - 7*24*3600*1000, now);
-			else
-				vz.wui.zoom(
-					new Date(d.getFullYear(), d.getMonth(), d.getDate()-d.getDay()+1).getTime(), // start from monday
-					new Date(d.getFullYear(), d.getMonth(), d.getDate()-d.getDay()+8).getTime()
-				);
-			break;
 		case 'zoom-month':
-			vz.wui.zoom(
-				new Date(d.getFullYear(), d.getMonth(), 1).getTime(),
-				new Date(d.getFullYear(), d.getMonth()+1, 1).getTime()
-			);
-			break;
 		case 'zoom-year':
-			vz.wui.zoom(
-				new Date(d.getFullYear(), 0, 1).getTime(),
-				new Date(d.getFullYear()+1, 0, 1).getTime()
-			);
+			var period = control.split('-')[1], min, max;
+			startOfPeriodLocale = period == 'week' ? 'isoweek' : period;
+
+			if (vz.wui.tmaxnow) {
+				/* jshint laxbreak: true */
+				min = period === vz.wui.period
+					? moment().subtract(1, period).valueOf()
+					: moment().startOf(startOfPeriodLocale).valueOf();
+				max = moment().valueOf();
+			}
+			else {
+				min = moment(middle).startOf(startOfPeriodLocale).valueOf();
+				max = moment(middle).startOf(startOfPeriodLocale).add(1, period).valueOf();
+			}
+
+			vz.wui.period = period;
+			vz.wui.zoom(min, Math.min(max, moment().valueOf()));
 			break;
 	}
 };
@@ -805,7 +825,6 @@ vz.wui.formatNumber = function(number, unit, maxPrefix) {
 	var precision = (Math.abs(si.number) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
 			Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
 
-	// apply maximum precision e.g. for °C values
 	if (vz.options.maxPrecision[unit] !== undefined) {
 		precision = Math.min(vz.options.maxPrecision[unit], precision);
 	}
