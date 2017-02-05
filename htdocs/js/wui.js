@@ -124,9 +124,9 @@ vz.wui.exportData = function(value) {
 			break;
 		case 'png':
 			$.when(
-				$.cachedScript('javascripts/canvas/Blob.js'),
-				$.cachedScript('javascripts/canvas/canvas-toBlob.js'),
-				$.cachedScript('javascripts/canvas/FileSaver.js'))
+				$.cachedScript('js/canvas/Blob.js'),
+				$.cachedScript('js/canvas/canvas-toBlob.js'),
+				$.cachedScript('js/canvas/FileSaver.js'))
 			.done(function() {
 				// will prompt the user to save the image as PNG
 				vz.plot.getCanvas().toBlob(function(blob) {
@@ -201,7 +201,7 @@ vz.wui.dialogs.init = function() {
 				.html(def.translation[vz.options.language])
 				.data('definition', def)
 				.val(def.name)
-				.css('background-image', def.icon ? 'url(images/types/' + def.icon : null)
+				.css('background-image', def.icon ? 'url(img/types/' + def.icon : null)
 		);
 	});
 	$('#entity-create option[value=power]').attr('selected', 'selected');
@@ -470,7 +470,7 @@ vz.wui.dialogs.addProperties = function(container, proplist, className, entity) 
 						cntrl = $('<input>')
 							.attr('type', 'hidden').attr("name", propdef.name)
 							.val((entity) ? entity[def] : 'aqua');
-						$.cachedScript('javascripts/jquery/jquery.simple-color.min.js').done(function() {
+						$.cachedScript('js/jquery/jquery.simple-color.min.js').done(function() {
 							// cntrl.attr('id', 'colorValue');
 							cntrl.simpleColor({
 								cellWidth: 18,
@@ -672,21 +672,35 @@ vz.wui.handleControls = function(action) {
 /**
  * Timestamp rounding for group mode
  */
-vz.wui.adjustTimestamp = function(ts, mode) {
-	var date = new Date(ts);
-	switch (mode || ['hour', 'day', 'month', 'year'].indexOf(vz.options.mode)) {
-		case 3:	date.setMonth(0); // year
+vz.wui.adjustTimestamp = function(ts, mode, middle) {
+	var period = mode || vz.options.mode,
+			ts = moment(ts);
+
+	switch (period) {
+		case 'year':
+			ts.startOf('year');
+			if (middle) ts.add(Math.round(ts.daysInYear() / 2), 'day');
+			break;
+		case 'month':
+			ts.startOf('month');
+			if (middle) ts.add(Math.round(ts.daysInMonth() / 2), 'day');
+			break;
+		case 'week':
+			ts.startOf('isoweek');
+			if (middle) ts.add(Math.round(7*24/2), 'hour');
+			break;
+		case 'day':
+			ts.startOf('day');
+			if (middle) ts.add(12, 'hour');
+			break;
+		case 'hour':
 		/* falls through */
-		case 2:	date.setMonth(date.getMonth(), 1); // month
-		/* falls through */
-		case 1:	date.setHours(0); // day
-		/* falls through */
-		case 0:	date.setMinutes(0); // hour
-		/* falls through */
-	default:
-		date.setSeconds(0, 0); // minutes
+		default:
+			ts.startOf(period);
+			if (middle) ts.add(0.5, period);
 	}
-	return date.getTime();
+
+	return ts;
 };
 
 /**
@@ -706,7 +720,7 @@ vz.wui.zoom = function(from, to) {
 
 	if (vz.wui.isConsumptionMode()) {
 		vz.options.plot.xaxis.min = vz.wui.adjustTimestamp(vz.options.plot.xaxis.min);
-		vz.options.plot.xaxis.max = vz.wui.adjustTimestamp(vz.options.plot.xaxis.max);
+		vz.options.plot.xaxis.max = moment(vz.wui.adjustTimestamp(vz.options.plot.xaxis.max)).add(1, vz.options.mode);
 	}
 
 	vz.wui.tmaxnow = (vz.options.plot.xaxis.max >= (now - 1000));
@@ -851,6 +865,151 @@ vz.wui.formatConsumptionUnit = function(unit) {
 	}
 
 	return unit;
+};
+
+/**
+ * Flot tickFormatter extension to apply axis labels
+ * Copied from jquery.flot.js
+ */
+vz.wui.tickFormatter = function (value, axis, tickIndex, ticks) {
+	// return label instead of last tick
+	if (ticks && tickIndex === ticks.length-1 && axis.options.axisLabel) {
+		return '[' + axis.options.axisLabel + ']';
+	}
+
+	var factor = axis.tickDecimals ? Math.pow(10, axis.tickDecimals) : 1;
+	var formatted = "" + Math.round(value * factor) / factor;
+
+	if (axis.tickDecimals !== null) {
+		var decimal = formatted.indexOf(".");
+		var precision = decimal == -1 ? 0 : formatted.length - decimal - 1;
+		if (precision < axis.tickDecimals) {
+			return (precision ? formatted : formatted + ".") + ("" + factor).substr(1, axis.tickDecimals - precision);
+		}
+	}
+
+	return formatted;
+};
+
+/**
+ * Update headline on zoom
+ */
+vz.wui.updateHeadline = function() {
+	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
+	var format = '%a %e. %b %Y';
+
+	if (delta < 3*24*3600*1000) format += ' %H:%M'; // under 3 days
+	if (delta < 5*60*1000) format += ':%S'; // under 5 minutes
+
+	// timezone-aware dates if timezon-js is inlcuded
+	var from = $.plot.dateGenerator(vz.options.plot.xaxis.min, vz.options.plot.xaxis);
+	var to = $.plot.dateGenerator(vz.options.plot.xaxis.max, vz.options.plot.xaxis);
+
+	from = $.plot.formatDate(from, format, vz.options.monthNames, vz.options.dayNames, true);
+	to = $.plot.formatDate(to, format, vz.options.monthNames, vz.options.dayNames, true);
+	$('#title').html(from + ' - ' + to);
+};
+
+/**
+ * Draws plot to container
+ */
+vz.wui.drawPlot = function () {
+	vz.options.interval = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
+	vz.wui.updateHeadline();
+
+	// assign entities to axes
+	if (vz.options.plot.axesAssigned === false) {
+		vz.entities.each(function(entity) {
+			entity.assignAxis();
+		}, true);
+
+		vz.options.plot.axesAssigned = true;
+	}
+
+	var series = [];
+	vz.entities.each(function(entity) {
+		if (entity.active && entity.definition && entity.definition.model == 'Volkszaehler\\Model\\Channel' &&
+				entity.data && entity.data.tuples && entity.data.tuples.length > 0) {
+			var i, maxTuples = 0;
+
+			// work on copy here to be able to redraw
+			var tuples = entity.data.tuples.map(function(t) {
+				return t.slice(0);
+			});
+
+
+			var style = vz.options.style || entity.style;
+			var fillstyle = parseFloat(vz.options.fillstyle || entity.fillstyle);
+			var linewidth = parseFloat(vz.options.linewidth || vz.options[entity.uuid == vz.wui.selectedChannel ? 'lineWidthSelected' : 'lineWidthDefault']);
+
+			// mangle data for "steps" curves by shifting one ts left ("step-before")
+			if (style == "steps") {
+				tuples.unshift([entity.data.from, 1, 1]); // add new first ts
+				for (i=0; i<tuples.length-1; i++) {
+					tuples[i][1] = tuples[i+1][1];
+				}
+			}
+
+			// remove number of datapoints from each tuple to avoid flot fill error
+			if (fillstyle || entity.gap) {
+				for (i=0; i<tuples.length; i++) {
+					maxTuples = Math.max(maxTuples, tuples[i][2]);
+					delete tuples[i][2];
+				}
+			}
+
+			var serie = {
+				data: tuples,
+				color: entity.color,
+				label: entity.title,
+				title: entity.title,
+				unit : entity.definition.unit,
+				lines: {
+					show:       style == 'lines' || style == 'steps' || style == 'states',
+					steps:      style == 'steps' || style == 'states',
+					fill:       fillstyle !== undefined ? fillstyle : false,
+					lineWidth:  linewidth
+				},
+				points: {
+					show:       style == 'points'
+				},
+				yaxis: entity.assignedYaxis
+			};
+
+			// disable interpolation when data has gaps
+			if (entity.gap) {
+				var minGapWidth = (entity.data.to - entity.data.from) / tuples.length;
+				serie.xGapThresh = Math.max(entity.gap * 1000 * maxTuples, minGapWidth);
+				vz.options.plot.xaxis.insertGaps = true;
+			}
+
+			series.push(serie);
+		}
+	}, true);
+
+	if (series.length === 0) {
+		$('#overlay').html('<img src="img/empty.png" alt="no data..." /><p>nothing to plot...</p>');
+		series.push({}); // add empty dataset to show axes
+	}
+	else {
+		$('#overlay').empty();
+	}
+
+	vz.plot = $.plot($('#flot'), series, vz.options.plot);
+
+	// remember legend container for updating
+	vz.wui.legend = $('.legend .legendLabel');
+
+	// disable automatic refresh if we are in past
+	if (vz.options.refresh) {
+		if (vz.wui.tmaxnow) {
+			vz.wui.setTimeout();
+		} else {
+			vz.wui.clearTimeout('(suspended)');
+		}
+	} else {
+		vz.wui.clearTimeout();
+	}
 };
 
 /*

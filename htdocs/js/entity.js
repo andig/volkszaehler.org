@@ -506,14 +506,12 @@ Entity.prototype.showDetails = function() {
 		switch (property) {
 			case 'type':
 				title = 'Typ';
-				value = $('<span>').text(this.definition.translation[vz.options.language]);
-				if (this.definition.icon)
-					value.prepend(
-						$('<img>')
-						.attr('src', 'images/blank.png')
+				var icon = this.definition.icon ? $('<img>')
+						// attr('src', 'img/types/' + this.definition.icon)
+						.attr('src', 'img/blank.png')
 						.addClass('icon-' + this.definition.icon.replace('.png', ''))
 						.css('margin-right', 4)
-					);
+					: null;
 				break;
 
 			case 'middleware':
@@ -530,7 +528,7 @@ Entity.prototype.showDetails = function() {
 				title = 'Cookie';
 				/* falls through */
 			case 'active':
-				value = '<img src="images/blank.png" class="icon-' + (value ? 'tick' : 'cross') + '" alt="' + (value ? 'ja' : 'nein') + '" />';
+				value = '<img src="img/blank.png" class="icon-' + (value ? 'tick' : 'cross') + '" alt="' + (value ? 'ja' : 'nein') + '" />';
 				break;
 		}
 
@@ -623,7 +621,7 @@ Entity.prototype.getDOMRow = function(parent) {
 			.append($('<span>')
 				.addClass('indicator')
 				.append($('<img>')
-					.attr('src', 'images/blank.png')
+					.attr('src', 'img/blank.png')
 					.addClass('icon-' + this.definition.icon.replace('.png', ''))
 				)
 				.append($('<span>')
@@ -643,7 +641,7 @@ Entity.prototype.getDOMRow = function(parent) {
 			.addClass('ops')
 			.append($('<input>')
 				.attr('type', 'image')
-				.attr('src', 'images/blank.png')
+				.attr('src', 'img/blank.png')
 				.addClass('icon-information')
 				.attr('alt', 'details')
 				.bind('click', this, function(event) {
@@ -657,7 +655,7 @@ Entity.prototype.getDOMRow = function(parent) {
 	if (this.cookie) {
 		$('td.ops', row).prepend($('<input>')
 			.attr('type', 'image')
-			.attr('src', 'images/blank.png')
+			.attr('src', 'img/blank.png')
 			.addClass('icon-delete')
 			.attr('alt', 'delete')
 			.bind('click', this, function(event) {
