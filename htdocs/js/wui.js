@@ -673,8 +673,8 @@ vz.wui.handleControls = function(action) {
  * Timestamp rounding for group mode
  */
 vz.wui.adjustTimestamp = function(ts, mode, middle) {
-	var period = mode || vz.options.mode,
-			ts = moment(ts);
+	var period = mode || vz.options.mode;
+	ts = moment(ts);
 
 	switch (period) {
 		case 'year':
