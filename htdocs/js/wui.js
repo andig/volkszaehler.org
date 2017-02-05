@@ -672,21 +672,35 @@ vz.wui.handleControls = function(action) {
 /**
  * Timestamp rounding for group mode
  */
-vz.wui.adjustTimestamp = function(ts, mode) {
-	var date = new Date(ts);
-	switch (mode || ['hour', 'day', 'month', 'year'].indexOf(vz.options.mode)) {
-		case 3:	date.setMonth(0); // year
+vz.wui.adjustTimestamp = function(ts, mode, middle) {
+	var period = mode || vz.options.mode,
+			ts = moment(ts);
+
+	switch (period) {
+		case 'year':
+			ts.startOf('year');
+			if (middle) ts.add(Math.round(ts.daysInYear() / 2), 'day');
+			break;
+		case 'month':
+			ts.startOf('month');
+			if (middle) ts.add(Math.round(ts.daysInMonth() / 2), 'day');
+			break;
+		case 'week':
+			ts.startOf('isoweek');
+			if (middle) ts.add(Math.round(7*24/2), 'hour');
+			break;
+		case 'day':
+			ts.startOf('day');
+			if (middle) ts.add(12, 'hour');
+			break;
+		case 'hour':
 		/* falls through */
-		case 2:	date.setMonth(date.getMonth(), 1); // month
-		/* falls through */
-		case 1:	date.setHours(0); // day
-		/* falls through */
-		case 0:	date.setMinutes(0); // hour
-		/* falls through */
-	default:
-		date.setSeconds(0, 0); // minutes
+		default:
+			ts.startOf(period);
+			if (middle) ts.add(0.5, period);
 	}
-	return date.getTime();
+
+	return ts;
 };
 
 /**
@@ -706,7 +720,7 @@ vz.wui.zoom = function(from, to) {
 
 	if (vz.wui.isConsumptionMode()) {
 		vz.options.plot.xaxis.min = vz.wui.adjustTimestamp(vz.options.plot.xaxis.min);
-		vz.options.plot.xaxis.max = vz.wui.adjustTimestamp(vz.options.plot.xaxis.max);
+		vz.options.plot.xaxis.max = moment(vz.wui.adjustTimestamp(vz.options.plot.xaxis.max)).add(1, vz.options.mode);
 	}
 
 	vz.wui.tmaxnow = (vz.options.plot.xaxis.max >= (now - 1000));
