@@ -24,6 +24,9 @@
 	# fix middleware suffix
 	RewriteCond %{REQUEST_FILENAME} !-f
 	RewriteRule ^middleware/(.*) middleware.php/$1 [L]
+
+	# frontend alias
+	RewriteRule ^frontend/(.*) $1 [L]
 </IfModule>
 
 <IfModule mod_headers.c>
