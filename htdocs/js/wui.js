@@ -738,6 +738,7 @@ vz.wui.zoom = function(from, to) {
 vz.wui.changeDisplayMode = function(mode) {
 	$("#display option[value=" + mode + "]").prop('selected', 'selected');
 	vz.options.mode = mode;
+	vz.options.plot.axesAssigned = false; // force axis assignment
 };
 
 /**
