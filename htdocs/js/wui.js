@@ -721,7 +721,10 @@ vz.wui.zoom = function(from, to) {
 
 	if (vz.wui.isConsumptionMode()) {
 		vz.options.plot.xaxis.min = vz.wui.adjustTimestamp(vz.options.plot.xaxis.min);
-		vz.options.plot.xaxis.max = moment(vz.wui.adjustTimestamp(vz.options.plot.xaxis.max)).add(1, vz.options.mode);
+		vz.options.plot.xaxis.max =
+			moment(vz.options.plot.xaxis.max).endOf(vz.options.mode).isAfter(moment())
+				? moment(vz.options.plot.xaxis.max).add(1, vz.options.mode)
+				: vz.wui.adjustTimestamp(vz.options.plot.xaxis.max);
 	}
 
 	vz.wui.tmaxnow = (vz.options.plot.xaxis.max >= (now - 1000));
