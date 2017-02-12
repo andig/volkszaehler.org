@@ -359,9 +359,6 @@ vz.wui.drawPlot = function () {
 
 		// avoid confusing intermediate ticks in consumption mode
 		plotOptions.xaxis.minTickSize = [1, vz.options.mode];
-
-		// remove one period from Xaxis max so e.g. 1.1.-31.12. become 1.1.-1.12.
-		plotOptions.xaxis.max = vz.wui.adjustTimestamp(plotOptions.xaxis.max - 1);
 	}
 
 	// remove right hand margin space if no right yaxis defined and used
