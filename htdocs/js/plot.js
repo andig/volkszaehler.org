@@ -277,7 +277,7 @@ vz.wui.drawPlot = function () {
 		// round timestamps for consumption mode
 		if (entity.isConsumptionMode()) {
 			for (i=0; i<tuples.length; i++) {
-				tuples[i][0] = vz.wui.adjustTimestamp(tuples[i][0], vz.options.mode, true);
+				tuples[i][0] = vz.wui.adjustTimestamp(tuples[i][0], true);
 			}
 		}
 
