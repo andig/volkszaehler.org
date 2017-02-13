@@ -649,18 +649,18 @@ vz.wui.handleControls = function(action) {
 		case 'zoom-month':
 		case 'zoom-year':
 			var period = control.split('-')[1], min, max;
-			startOfPeriodLocale = period == 'week' ? 'isoweek' : period;
+			periodLocale = period == 'week' ? 'isoweek' : period;
 
 			if (vz.wui.tmaxnow) {
 				/* jshint laxbreak: true */
 				min = period === vz.wui.period
 					? moment().subtract(1, period).valueOf()
-					: moment().startOf(startOfPeriodLocale).valueOf();
+					: moment().startOf(periodLocale).valueOf();
 				max = moment().valueOf();
 			}
 			else {
-				min = moment(middle).startOf(startOfPeriodLocale).valueOf();
-				max = moment(middle).startOf(startOfPeriodLocale).add(1, period).valueOf();
+				min = moment(middle).startOf(periodLocale).valueOf();
+				max = moment(middle).startOf(periodLocale).add(1, period).valueOf();
 			}
 
 			vz.wui.period = period;
@@ -672,11 +672,10 @@ vz.wui.handleControls = function(action) {
 /**
  * Timestamp rounding for group mode
  */
-vz.wui.adjustTimestamp = function(ts, mode, middle) {
-	var period = mode || vz.options.mode,
-			ts = moment(ts);
+vz.wui.adjustTimestamp = function(ts, middle) {
+	ts = moment(ts);
 
-	switch (period) {
+	switch (vz.options.mode) {
 		case 'year':
 			ts.startOf('year');
 			if (middle) ts.add(Math.round(ts.daysInYear() / 2), 'day');
@@ -696,11 +695,11 @@ vz.wui.adjustTimestamp = function(ts, mode, middle) {
 		case 'hour':
 		/* falls through */
 		default:
-			ts.startOf(period);
-			if (middle) ts.add(0.5, period);
+			ts.startOf(vz.options.mode);
+			if (middle) ts.add(0.5, vz.options.mode);
 	}
 
-	return ts;
+	return ts.valueOf();
 };
 
 /**
@@ -720,10 +719,12 @@ vz.wui.zoom = function(from, to) {
 
 	if (vz.wui.isConsumptionMode()) {
 		vz.options.plot.xaxis.min = vz.wui.adjustTimestamp(vz.options.plot.xaxis.min);
-		vz.options.plot.xaxis.max =
-			moment(vz.options.plot.xaxis.max).endOf(vz.options.mode).isAfter(moment())
-				? moment(vz.options.plot.xaxis.max).add(1, vz.options.mode)
-				: vz.wui.adjustTimestamp(vz.options.plot.xaxis.max);
+		vz.options.plot.xaxis.max = vz.wui.adjustTimestamp(vz.options.plot.xaxis.max);
+
+		var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
+		if (moment(vz.options.plot.xaxis.max).endOf(periodLocale).isAfter(moment())) {
+			vz.options.plot.xaxis.max = moment(vz.options.plot.xaxis.max).add(1, periodLocale).valueOf();
+		}
 	}
 
 	vz.wui.tmaxnow = (vz.options.plot.xaxis.max >= (now - 1000));
