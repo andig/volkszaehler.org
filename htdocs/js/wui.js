@@ -695,8 +695,8 @@ vz.wui.adjustTimestamp = function(ts, middle) {
 		case 'hour':
 		/* falls through */
 		default:
-			ts.startOf(period);
-			if (middle) ts.add(0.5, period);
+			ts.startOf(vz.options.mode);
+			if (middle) ts.add(0.5, vz.options.mode);
 	}
 
 	return ts.valueOf();
