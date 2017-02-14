@@ -41,23 +41,17 @@ Or follow the detailed installation instructions at http://wiki.volkszaehler.org
     volkszaehler.org/
      |_ etc/                    configuration files
      |_ htdocs/                 public web files
-     |   |_ middleware.php      middleware
-     |   \_ frontend            web ui
-     |
      |_ lib/                    middleware libraries
+     |
      \_ misc/
-         |_ controller/
-         |   |_ vzlogger/       command line tool to log meters/sensors
-         |   \_ mbus/           a controller for mbus/messbus
-         |
+         |_ controller/         various controllers, e.g. for mbus
          |_ docs/               documentation
          |_ frontend/           alternative frontends
          |_ graphics/           several graphics for docs, etc.
          |_ sql/                database schema dumps
          |   \_ demo/           demo data
          |
-         |_ tools/              scripts for imports, installation etc.
-         \_ tests/              simple tests for middleware classes
+         \_ tools/              scripts for imports, installation etc.
 
 
 ## Copyright
