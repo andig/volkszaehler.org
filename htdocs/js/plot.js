@@ -329,7 +329,8 @@ vz.wui.drawPlot = function () {
 			$.extend(serie, {
 				bars: {
 					show:       true,
-					lineWidth:  entity.selected ? linewidth : 0,
+					lineWidth:  0,
+					fill:       entity.selected ? 1.0 : 0.8,
 					order:      index++ // only used for bars
 				}
 			});
