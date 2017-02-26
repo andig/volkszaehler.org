@@ -95,11 +95,6 @@ Entity.prototype.parseJSON = function(json) {
 			// min, max remain undefined
 		};
 	}
-
-	// subscribe to updates
-	if (this.active) {
-		this.subscribe();
-	}
 };
 
 /**

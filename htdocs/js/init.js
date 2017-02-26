@@ -144,12 +144,12 @@ $(document).ready(function() {
 				new ab.connect(uri, function(session) {
 					middleware.session = session;
 
-					// subscribe entities
+					// subscribe entities for middleware
 					vz.entities.each(function(entity) {
 						if (entity.active && entity.middleware.indexOf(middleware.url) >= 0) {
 							entity.subscribe(session);
 						}
-					}, true);
+					}, true); // recursive
 				}, function(code, reason) {
 					delete middleware.session;
 				});
