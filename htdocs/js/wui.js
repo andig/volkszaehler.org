@@ -677,29 +677,10 @@ vz.wui.handleControls = function(action) {
 vz.wui.adjustTimestamp = function(ts, middle) {
 	ts = moment(ts);
 
-	switch (vz.options.mode) {
-		case 'year':
-			ts.startOf('year');
-			if (middle) ts.add(Math.round(ts.daysInYear() / 2), 'day');
-			break;
-		case 'month':
-			ts.startOf('month');
-			if (middle) ts.add(Math.round(ts.daysInMonth() / 2), 'day');
-			break;
-		case 'week':
-			ts.startOf('isoweek');
-			if (middle) ts.add(Math.round(7*24/2), 'hour');
-			break;
-		case 'day':
-			ts.startOf('day');
-			if (middle) ts.add(12, 'hour');
-			break;
-		case 'hour':
-		/* falls through */
-		default:
-			ts.startOf(vz.options.mode);
-			if (middle) ts.add(0.5, vz.options.mode);
-	}
+	if (middle)
+		ts = moment((ts.startOf(vz.options.mode).valueOf() + ts.endOf(vz.options.mode).valueOf()) / 2);
+	else
+		ts.startOf(vz.options.mode);
 
 	return ts.valueOf();
 };
