@@ -29,18 +29,30 @@
  * Update headline on zoom
  */
 vz.wui.updateHeadline = function() {
-	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-	var format = '%a %e. %b %Y';
+	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min,
+			format = '%a %e. %b %Y',
+			from = vz.options.plot.xaxis.min,
+			to = vz.options.plot.xaxis.max;
 
-	if (delta < 3*24*3600*1000) format += ' %H:%M'; // under 3 days
-	if (delta < 5*60*1000) format += ':%S'; // under 5 minutes
+	if (delta < 3*24*3600*1000) {
+		format += ' %H:%M'; // under 3 days
+		if (delta < 5*60*1000) format += ':%S'; // under 5 minutes
+	}
+	else {
+		// only formatting days- remove 1ms to display previous day for consumption mode
+		to--;
+	}
 
-	// timezone-aware dates if timezon-js is inlcuded
-	var from = $.plot.dateGenerator(vz.options.plot.xaxis.min, vz.options.plot.xaxis);
-	var to = $.plot.dateGenerator(vz.options.plot.xaxis.max, vz.options.plot.xaxis);
+	// timezone-aware dates if timezone-js is included
+	from = $.plot.formatDate(
+		$.plot.dateGenerator(from, vz.options.plot.xaxis),
+		format, vz.options.monthNames, vz.options.dayNames, true
+	);
+	to = $.plot.formatDate(
+		$.plot.dateGenerator(to, vz.options.plot.xaxis),
+		format, vz.options.monthNames, vz.options.dayNames, true
+	);
 
-	from = $.plot.formatDate(from, format, vz.options.monthNames, vz.options.dayNames, true);
-	to = $.plot.formatDate(to, format, vz.options.monthNames, vz.options.dayNames, true);
 	$('#title').html(from + ' - ' + to);
 };
 
@@ -265,7 +277,7 @@ vz.wui.drawPlot = function () {
 		// round timestamps for consumption mode
 		if (entity.isConsumptionMode()) {
 			for (i=0; i<tuples.length; i++) {
-				tuples[i][0] = vz.wui.adjustTimestamp(tuples[i][0], vz.options.mode, true);
+				tuples[i][0] = vz.wui.adjustTimestamp(tuples[i][0], true);
 			}
 		}
 
@@ -317,7 +329,8 @@ vz.wui.drawPlot = function () {
 			$.extend(serie, {
 				bars: {
 					show:       true,
-					lineWidth:  entity.selected ? linewidth : 0,
+					lineWidth:  0,
+					fill:       entity.selected ? 1.0 : 0.8,
 					order:      index++ // only used for bars
 				}
 			});
@@ -347,9 +360,6 @@ vz.wui.drawPlot = function () {
 
 		// avoid confusing intermediate ticks in consumption mode
 		plotOptions.xaxis.minTickSize = [1, vz.options.mode];
-
-		// remove one period from Xaxis max so e.g. 1.1.-31.12. become 1.1.-1.12.
-		plotOptions.xaxis.max = vz.wui.adjustTimestamp(plotOptions.xaxis.max - 1);
 	}
 
 	// remove right hand margin space if no right yaxis defined and used
