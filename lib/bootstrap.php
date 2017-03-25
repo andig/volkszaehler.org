@@ -40,18 +40,13 @@ if (!file_exists(VZ_DIR . '/vendor/autoload.php')) {
 	die('Could not find autoloader. Check that dependencies have been installed via `composer install`.');
 }
 
-if (!file_exists(VZ_DIR . '/etc/volkszaehler.conf.php')) {
-	die('Could not find config file. Check that etc/volkszaehler.conf.php exists.');
-}
-
 require_once VZ_DIR . '/vendor/autoload.php';
 
 // load configuration
 Util\Configuration::load(VZ_DIR . '/etc/volkszaehler.conf');
 
 // set timezone
-$tz = (Util\Configuration::read('timezone')) ? Util\Configuration::read('timezone') : @date_default_timezone_get();
-date_default_timezone_set($tz);
+date_default_timezone_set(Util\Configuration::read('timezone', @date_default_timezone_get()));
 
 // set locale
 setlocale(LC_ALL, Util\Configuration::read('locale'));
