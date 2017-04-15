@@ -195,37 +195,63 @@ abstract class Interpreter implements \IteratorAggregate {
 	}
 
 	/**
+	 * Find first/last database row for requested period and mode
+	 */
+	protected function findBorderTimestamps() {
+		// allow from..to exactly on period boundary if not grouping
+		// otherwise the previous timestamp must be used
+		$ltOp = ($this->groupBy) ? '<' : '<=';
+
+		if (isset($this->from)) {
+			if ($this->hasOption('exact')) {
+				// export mode
+				$sql = 'SELECT MAX(timestamp) FROM data WHERE channel_id=? AND timestamp' .$ltOp. '?';
+				$from = $this->conn->fetchColumn($sql, array($this->channel->getId(), $this->from), 0);
+			}
+			else {
+				// chart mode
+				$sql = 'SELECT timestamp FROM data WHERE channel_id=? AND timestamp<=? ORDER BY timestamp DESC LIMIT 2';
+				$rows = $this->conn->fetchAll($sql, array($this->channel->getId(), $this->from));
+				if (count($rows)) {
+					// earliest timestamp found
+					$from = $rows[count($rows)-1]['timestamp'];
+				}
+			}
+
+			if (isset($from))
+				$this->from = (double)$from;
+		}
+
+		if (isset($this->to)) {
+			// avoid generating timestamps outside the requested range for consumption
+			if ($this->hasOption('exact') || $this->hasOption('consumption') || $this->hasOption('consumptionto')) {
+				$sql = 'SELECT MAX(timestamp) FROM data WHERE channel_id=? AND timestamp' .$ltOp. '?';
+
+			}
+			else {
+				$sql = 'SELECT MIN(timestamp) FROM data WHERE channel_id=? AND timestamp>=?';
+			}
+			$to = $this->conn->fetchColumn($sql, array($this->channel->getId(), $this->to), 0);
+
+			if (isset($to))
+				$this->to = (double)$to; // bigint conversion
+		}
+	}
+
+	/**
 	 * Get raw data from database
 	 *
 	 * @return DataIterator
 	 * @throws \Exception
 	 */
 	protected function getData() {
-		if (!$this->hasOption('exact')) {
-			// get timestamps of preceding and following data points as a graciousness
-			// for the frontend to be able to draw graphs to the left and right borders
-			if (isset($this->from)) {
-				$sql = 'SELECT MAX(timestamp) FROM data WHERE channel_id=? AND timestamp < (SELECT MAX(timestamp) FROM data WHERE channel_id=? AND timestamp<?)';
+		// first and last timestamp
+		$this->findBorderTimestamps();
 
-				// if not second-highest timestamp take highest before $this->from
-				if (null === $from = $this->conn->fetchColumn($sql, array($this->channel->getId(), $this->channel->getId(), $this->from), 0)) {
-					$sql = 'SELECT MAX(timestamp) FROM data WHERE channel_id=? AND timestamp<?';
-					$from = $this->conn->fetchColumn($sql, array($this->channel->getId(), $this->from), 0);
-				}
-
-				if ($from)
-					$this->from = (double)$from; // bigint conversion
-			}
-
-			if (isset($this->to)) {
-				// avoid generating timestamps outside the requested range for consumption
-				$sql = ($this->hasOption('consumption') || $this->hasOption('consumptionto'))
-					? 'SELECT MAX(timestamp) FROM data WHERE channel_id=? AND timestamp<?'
-					: 'SELECT MIN(timestamp) FROM data WHERE channel_id=? AND timestamp>?';
-				$to = $this->conn->fetchColumn($sql, array($this->channel->getId(), $this->to), 0);
-				if ($to)
-					$this->to = (double)$to; // bigint conversion
-			}
+		// no distinct from...to timestamps found
+		if ($this->from === $this->to) {
+			$this->rowCount = 0;
+			return new \EmptyIterator();
 		}
 
 		// set parameters; repeat if modified after setting
@@ -267,6 +293,7 @@ abstract class Interpreter implements \IteratorAggregate {
 		if (!$this->hasOption('slow')) {
 			$this->optimizer->optimizeDataSQL($sql, $sqlParameters);
 		}
+		// error_log(\Volkszaehler\Util\Debug::getParametrizedQuery($sql, $sqlParameters));
 
 		// run query
 		$stmt = $this->conn->executeQuery($sql, $sqlParameters);

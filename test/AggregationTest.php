@@ -151,15 +151,15 @@ class AggregationTest extends DataPerformance
 	function testAggregateRetrievalFrom() {
 		// 1 data
 		$this->getTuplesRaw(strtotime('today 0:00') * 1000, null, 'day');
-		$this->assertEquals(1, $this->json->data->rows);
+		$this->assertEquals(2, $this->json->data->rows);
 
 		// 1 agg + 1 data
 		$this->getTuplesRaw(strtotime('1 days ago 0:00') * 1000, null, 'day');
-		$this->assertEquals(2, $this->json->data->rows);
+		$this->assertEquals(3, $this->json->data->rows);
 
 		//  1 agg + 1 agg + 1 data
 		$this->getTuplesRaw(strtotime('2 days ago 0:00') * 1000, null, 'day');
-		$this->assertEquals(3, $this->json->data->rows);
+		$this->assertEquals(4, $this->json->data->rows);
 
 		// 1 data + 1 agg + 1 agg + 1 data
 		$this->getTuplesRaw(strtotime('3 days ago 0:00') * 1000, null, 'day');

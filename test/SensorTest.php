@@ -114,7 +114,7 @@ class SensorTest extends Data
 	 * @depends testGetMultiple
 	 */
 	function testGetLastTuple() {
-		$tuples = $this->getTuplesRaw($this->ts1, $this->ts2);
+		$tuples = $this->getTuples($this->ts1, $this->ts2);
 		$tuplesNow = $this->getTuples("now");
 
 		$this->assertEquals($tuples, $tuplesNow);
