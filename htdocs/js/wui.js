@@ -137,7 +137,7 @@ vz.wui.exportData = function(value) {
 		case 'csv':
 		case 'json':
 		case 'xml':
-			window.location = vz.getLink(value);
+			window.location = vz.getLink(value, "exact");
 			break;
 	}
 };

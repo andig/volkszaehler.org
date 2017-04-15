@@ -37,7 +37,7 @@ var Exception = function(type, message, code) {
  *
  * @return string url
  */
-vz.getLink = function(format) {
+vz.getLink = function(format, options) {
 	var entities = [];
 	var middleware = '';
 	vz.entities.each(function(entity, parent) {
@@ -57,6 +57,7 @@ vz.getLink = function(format) {
 	var params = $.extend($.getUrlParams(), {
 		from: Math.floor(vz.options.plot.xaxis.min),
 		to: Math.ceil(vz.options.plot.xaxis.max),
+		options: options,
 		uuid: entities.map(function(entity) {
 			return entity.uuid;
 		})
