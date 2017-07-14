@@ -61,7 +61,7 @@ $(document).ready(function() {
 	NProgress.configure({ showSpinner: false });
 
 	// add timezone-js support
-	if (timezoneJS !== undefined && timezoneJS.Date !== undefined) {
+	if (typeof timezoneJS !== "undefined" && typeof timezoneJS.Date !== "undefined") {
 		timezoneJS.timezone.zoneFileBasePath = "tz";
 		timezoneJS.timezone.defaultZoneFile = [];
 		timezoneJS.timezone.init({ async: false });

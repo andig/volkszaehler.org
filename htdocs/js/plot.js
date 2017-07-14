@@ -259,12 +259,12 @@ vz.wui.drawPlot = function () {
 		);
 
 		// mangle data for "steps" curves by shifting one ts left ("step-before")
-		if (style == 'steps') {
-			tuples.unshift([entity.data.from, 1, 1]); // add new first ts
-			for (i=0; i<tuples.length-1; i++) {
-				tuples[i][1] = tuples[i+1][1];
-			}
-		}
+		// if (style == 'steps') {
+		// 	tuples.unshift([entity.data.from, 1, 1]); // add new first ts
+		// 	for (i=0; i<tuples.length-1; i++) {
+		// 		tuples[i][1] = tuples[i+1][1];
+		// 	}
+		// }
 
 		// remove number of datapoints from each tuple to avoid flot fill error
 		if (fillstyle || entity.gap || style == 'bars') {
@@ -289,7 +289,11 @@ vz.wui.drawPlot = function () {
 			label: entity.title,
 			title: entity.title,
 			unit:  entity.getUnitForMode(),
-			yaxis: entity.assignedYaxis
+			yaxis: entity.assignedYaxis,
+			// chartjs only
+			linewidth: linewidth,
+			linestyle: linestyle,
+			style: style,
 		};
 
 		if (['lines', 'steps', 'states'].indexOf(style) >= 0) {
@@ -375,16 +379,187 @@ vz.wui.drawPlot = function () {
 		plotOptions.xaxis.reserveSpace = false;
 	}
 
-	if (series.length === 0) {
-		$('#overlay').html('<img src="images/empty.png" alt="no data..." /><p>nothing to plot...</p>');
-		series.push({}); // add empty dataset to show axes
-	}
-	else {
-		$('#overlay').empty();
+	// if (series.length === 0) {
+	// 	$('#overlay').html('<img src="images/empty.png" alt="no data..." /><p>nothing to plot...</p>');
+	// 	series.push({}); // add empty dataset to show axes
+	// }
+	// else {
+	// 	$('#overlay').empty();
+	// }
+
+	// map datasets to chartjs
+	var datasets = [], labels = [];
+	series.forEach(function(serie) {
+		var dataset = {
+			type: 'line',
+			label: serie.label,
+			backgroundColor: serie.color,
+			borderColor: serie.color,
+			yAxisID: 'axis' + serie.yaxis,
+			xAxisID: 'axis-time',
+			borderWidth: serie.linewidth,
+			fill: false,
+			pointRadius: 0
+		};
+
+		switch (serie.style) {
+			case 'steps':
+				dataset.steppedLine = 'after';
+				break;
+			case 'states':
+				dataset.steppedLine = 'before';
+				break;
+			case 'bars':
+				dataset.type = 'bar';
+				dataset.xAxisID = 'axis-bar';
+				break;
+		}
+
+		switch (serie.linestyle) {
+			case 'dashed':
+				dataset.borderDash = [5, 5];
+				break;
+			case 'dotted':
+				dataset.borderDash = [1, 2];
+				break;
+		}
+
+		if (serie.data) {
+			if (serie.style == 'bars') {
+console.log("bars "+vz.options.mode);
+				dataset.data = [];
+				var from;
+
+				serie.data.forEach(function(t, idx) {
+					if (!from) from = t[0];
+
+					var period = moment(vz.wui.adjustTimestamp(t[0]));
+					labels.push(period.format('D. MMM HH:mm'));
+
+					dataset.data.push(t[1]);
+				});
+
+				console.log(labels);
+				// console.log(dataset.data);
+			}
+			else { // line
+				dataset.data = serie.data.map(function(t) {
+					return {
+						x: t[0],
+						y: t[1],
+					};
+				});
+			}
+		}
+
+		datasets.push(dataset);
+	});
+
+	// configure chartjs axes
+	var axes = [];
+	plotOptions.yaxes.forEach(function(_axis, id) {
+		var axisId = "axis" + (id+1);
+
+		// check if axis is used
+		if (!datasets.some(function(dataset) {
+			return dataset.yAxisID == axisId;
+		})) {
+			return;
+		}
+
+		// defined axis and position
+		var axis = {
+			id: axisId,
+			position: _axis.position == 'right' ? 'right' : 'left'
+		};
+
+		// hide grid lines for secondary axes
+		if (axis.position == 'right') {
+			axis.gridLines = {
+				drawOnChartArea: false
+			};
+		}
+
+		// show axis label
+		if (_axis.axisLabel) {
+			axis.scaleLabel = {
+				display: true,
+				labelString: _axis.axisLabel
+			};
+		}
+		if (_axis.min === undefined) {
+			axis.ticks = {
+				beginAtZero: true
+			};
+		}
+
+		axes.push(axis);
+	});
+
+	// configure chartjs axes
+	var config = {
+		// responsive: true,
+		// maintainAspectRatio: false,
+		type: 'line',
+		data: {
+			labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', ],
+			datasets: datasets,
+		},
+		options: {
+			scales: {
+				xAxes: [{
+					type: 'category',
+					id: 'axis-bar',
+					display: false,
+					gridLines: {
+            offsetGridLines: true
+          },
+				}, {
+					type: 'time',
+					id: 'axis-time',
+					display: true,
+					time: {
+						displayFormats: {
+							'second': 'HH:mm:ss',
+							'minute': 'HH:mm:ss',
+							'hour': 'D. MMM HH:mm',
+							'day': 'D. MMM',
+							'quarter': '[Q]Q/YYYY',
+						},
+						min: vz.options.plot.xaxis.min,
+						max: vz.options.plot.xaxis.max,
+					},
+					ticks: {
+						maxRotation: 0,
+					}
+				}, ],
+				yAxes: axes
+			},
+			tooltips: {
+				enabled: false
+			}
+		}
+	};
+
+	// change chart options for bar mode
+	if (datasets.some(function(dataset) {
+		return dataset.type == 'bar';
+	})) {
+		config.type = 'bar';
+		config.options.scales.xAxes.forEach(function(axis) {
+			if (axis.id == 'axis-bar') {
+				axis.display = true;
+			}
+			if (axis.id == 'axis-time') {
+				axis.display = false;
+			}
+		});
 	}
 
-	// call flot
-	vz.plot = $.plot($('#flot'), series, plotOptions);
+	var print = $.extend({}, config);
+	print = JSON.stringify(print);
+	console.log(print);
+	var chart = new Chart($('#flot'), config);
 
 	// disable automatic refresh if we are in past
 	if (vz.options.refresh) {
