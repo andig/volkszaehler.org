@@ -388,11 +388,11 @@ vz.wui.drawPlot = function () {
 	// }
 
 	// map datasets to chartjs
-	var datasets = [], labels = [];
+	var datasets = [], labels;
 	series.forEach(function(serie) {
 		var dataset = {
 			type: 'line',
-			label: serie.label,
+			label: ['', serie.label, ''],
 			backgroundColor: serie.color,
 			borderColor: serie.color,
 			yAxisID: 'axis' + serie.yaxis,
@@ -425,31 +425,33 @@ vz.wui.drawPlot = function () {
 		}
 
 		if (serie.data) {
-			if (serie.style == 'bars') {
-console.log("bars "+vz.options.mode);
-				dataset.data = [];
-				var from;
+			if (serie.style == 'bars' && labels === undefined) {
+				var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
+				console.log("periodLocale "+periodLocale);
 
-				serie.data.forEach(function(t, idx) {
-					if (!from) from = t[0];
+				var start = moment(vz.options.plot.xaxis.min);
+				var end = moment(vz.options.plot.xaxis.max);
+				console.log(start.format()+" - "+end.format());
 
-					var period = moment(vz.wui.adjustTimestamp(t[0]));
-					labels.push(period.format('D. MMM HH:mm'));
+				var periods = moment.duration(end.diff(start));
+				console.log(periods.humanize());
 
-					dataset.data.push(t[1]);
-				});
+				var count = periods.as(periodLocale);
+				count = Math.floor(count);
+				console.log(count);
 
+				labels = Array(count).fill('x');
 				console.log(labels);
-				// console.log(dataset.data);
 			}
-			else { // line
-				dataset.data = serie.data.map(function(t) {
-					return {
-						x: t[0],
-						y: t[1],
-					};
-				});
-			}
+
+			dataset.data = serie.data.map(function(t) {
+				if (serie.style == 'bars')
+					return t[1];
+				return { // line
+					x: t[0],
+					y: t[1],
+				};
+			});
 		}
 
 		datasets.push(dataset);
@@ -484,6 +486,8 @@ console.log("bars "+vz.options.mode);
 		if (_axis.axisLabel) {
 			axis.scaleLabel = {
 				display: true,
+			// lineHeight: 48,
+			// paddingTop: 400,
 				labelString: _axis.axisLabel
 			};
 		}
@@ -502,8 +506,8 @@ console.log("bars "+vz.options.mode);
 		// maintainAspectRatio: false,
 		type: 'line',
 		data: {
-			labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', ],
 			datasets: datasets,
+			// labels: labels,
 		},
 		options: {
 			scales: {
@@ -511,6 +515,8 @@ console.log("bars "+vz.options.mode);
 					type: 'category',
 					id: 'axis-bar',
 					display: false,
+					// labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', ],
+					labels: labels,
 					gridLines: {
             offsetGridLines: true
           },
@@ -518,6 +524,7 @@ console.log("bars "+vz.options.mode);
 					type: 'time',
 					id: 'axis-time',
 					display: true,
+					// autoSkip: true,
 					time: {
 						displayFormats: {
 							'second': 'HH:mm:ss',
@@ -546,20 +553,21 @@ console.log("bars "+vz.options.mode);
 		return dataset.type == 'bar';
 	})) {
 		config.type = 'bar';
-		config.options.scales.xAxes.forEach(function(axis) {
-			if (axis.id == 'axis-bar') {
-				axis.display = true;
-			}
-			if (axis.id == 'axis-time') {
-				axis.display = false;
-			}
-		});
+		// config.options.scales.xAxes.forEach(function(axis) {
+		// 	if (axis.id == 'axis-bar') {
+		// 		axis.display = true;
+		// 	}
+		// 	if (axis.id == 'axis-time') {
+		// 		axis.display = false;
+		// 	}
+		// });
 	}
 
 	var print = $.extend({}, config);
 	print = JSON.stringify(print);
 	console.log(print);
 	var chart = new Chart($('#flot'), config);
+console.log(chart);
 
 	// disable automatic refresh if we are in past
 	if (vz.options.refresh) {
