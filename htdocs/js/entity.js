@@ -200,15 +200,24 @@ Entity.prototype.assignAxis = function() {
  */
 Entity.prototype.updateAxisScale = function() {
 	if (this.assignedYaxis !== undefined && vz.options.plot.yaxes.length >= this.assignedYaxis) {
-		if (vz.options.plot.yaxes[this.assignedYaxis-1].min === undefined) { // axis min still not set
+		var yaxis = vz.options.plot.yaxes[this.assignedYaxis-1];
+
+		if (yaxis.min === undefined) { // axis min still not set
 			// avoid overriding user-defined options
-			vz.options.plot.yaxes[this.assignedYaxis-1].min = 0;
+			yaxis.min = 0;
 		}
 		if (this.data && this.data.tuples && this.data.tuples.length > 0) {
 			// allow negative values, e.g. for temperature sensors
-			if (this.data.min && this.data.min[1] < 0 && vz.options.plot.yaxes[this.assignedYaxis-1].min === 0) { // set axis min to 'auto'
-				vz.options.plot.yaxes[this.assignedYaxis-1].min = null;
+			if (this.data.min && this.data.min[1] < 0 && yaxis.min === 0) { // set axis min to 'auto'
+				yaxis.min = null;
 			}
+		}
+
+		// accumulate data.max at axis level for unit formatting
+		if (this.data.max) {
+			yaxis.maxAbsValue = yaxis.maxAbsValue === undefined
+				? Math.abs(this.data.max[1])
+				: Math.max(yaxis.maxAbsValue, Math.abs(this.data.max[1]));
 		}
 	}
 };

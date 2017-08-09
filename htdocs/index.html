@@ -46,7 +46,7 @@
 
 	<script type="text/javascript" src="vendor/moment.min.js"></script>
 	<script type="text/javascript" src="vendor/nprogress.min.js"></script>
-	<script type="text/javascript" src="vendor/flot/flot.min.js"></script>
+	<!-- <script type="text/javascript" src="vendor/flot/flot.min.js"></script> -->
 
 	<script type="text/javascript" src="../../Chart.js/dist/Chart.js"></script>
 	<!-- <script type="text/javascript" src="../bower_components/chart.js/dist/Chart.js"></script> -->
@@ -120,8 +120,9 @@
 		</div>
 		<br style="clear: both" />
 	</div>
-	<div id="plot">
-		<canvas id="flot" style="height:200px; width:100%"></canvas>
+	<div id="plot" style="position: relative;">
+		<!-- <canvas id="flot" style="height:200px; width:100%"></canvas> -->
+		<canvas id="flot"></canvas>
 	</div>
 
 	<div id="controls">

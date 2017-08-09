@@ -52,166 +52,10 @@ vz.wui.updateHeadline = function() {
 		$.plot.dateGenerator(to, vz.options.plot.xaxis),
 		format, vz.options.monthNames, vz.options.dayNames, true
 	);
+	// from = $.plot.formatDate(new Date(from), format);
+	// from = $.plot.formatDate(new Date(to), format);
 
 	$('#title').html(from + ' - ' + to);
-};
-
-/**
- * Update legend on move hover
- */
-vz.wui.updateLegend = function(pos, item) {
-	vz.wui.updateLegendTimeout = null;
-
-	var axes = vz.plot.getAxes();
-	if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
-		pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
-		return;
-
-	var i, j, dataset = vz.plot.getData();
-	for (i = 0; i < dataset.length; ++i) {
-		var series = dataset[i];
-
-		if (!series.data.length)
-			continue;
-
-		// find the nearest points, x-wise
-		for (j = 0; j < series.data.length; ++j)
-			// bar charts store adjusted timestamp in index 3
-			if (series.data[j][series.bars.show && series.bars.barWidth ? 3 : 0] > pos.x)
-				break;
-
-		var y = null, p = series.data[j-1];
-		if (series.bars.show && series.bars.barWidth) {
-			// display = bars
-			if (p && pos.x < p[3] + series.bars.barWidth)
-				y = p[1];
-		}
-		// lines.steps includes states
-		else if (series.lines.show && series.lines.steps) {
-			// display = steps
-			if (p)
-				y = p[1];
-		}
-		else {
-			// display = line -> interpolate
-			var p2 = series.data[j];
-			if (p && p2)
-				y = p[1] + (p2[1] - p[1]) * (pos.x - p[0]) / (p2[0] - p[0]);
-		}
-
-		var legend = $('.legend .legendLabel');
-		if (y === null) {
-			legend.eq(i).text(series.title);
-		}
-		else {
-			legend.eq(i).text(series.title + ": " + vz.wui.formatNumber(y, series.unit));
-		}
-	}
-
-	// use plot wrapper instead of `new Date()` for timezone support
-	var d = $.plot.dateGenerator(pos.x, vz.options.plot.xaxis);
-	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-	var format = (delta > 1*24*3600*1000) ? '%d.%m.%y %H:%M' : '%H:%M:%S';
-
-	/*
-	 * Important coordinate types
-	 *
-	 * pos.pageX: 										abs mouse position
-	 * vz.plot.offset()								abs plot area position (in page)
-	 *
-	 * $('#flot').offset().left 			abs placeholder div position (in page)
-	 * vz.plot.pointOffset(pos) 			rel point position inside placeholder div
-	 *
-	 * vz.plot.getPlotOffset()				rel grid position inside canvas/placeholder div
-	 */
-
-	// position the timestamp
-	$('#time').text($.plot.formatDate(d, format));
-	var offset = (pos.pageX + $('#time').outerWidth() > vz.plot.offset().left + vz.plot.width()) ? $('#time').outerWidth() : 0;
-
-	$('#time').css({
-		top: vz.plot.offset().top,
-		left: pos.pageX - offset,
-		display: 'inline-block'
-	});
-
-	// update opaque background sizing
-	$('.legend > div').css({ width: $('.legend table').css('width') });
-};
-
-/**
- * Callback when mouse leaves plot area
- */
-vz.wui.plotLeave = function() {
-	vz.wui.updateLegendTimeout = null;
-	$('#time').css({ display: 'none' });
-
-	vz.plot.getData().forEach(function(series, idx) {
-		$('.legend .legendLabel').eq(idx).text(series.title);
-	});
-};
-
-/**
- * Formatter-aware tickGenerator extension to limit tick generation
- * Source: jquery.flot.js
- */
-vz.wui.tickGenerator = function (axis) {
-	function floorInBase(n, base) {
-		return base * Math.floor(n / base);
-	}
-	var ticks = [],
-			start = floorInBase(axis.min, axis.tickSize),
-			min = axis.options.minTick,
-			max = axis.options.maxTick,
-			i = 0,
-			v = Number.NaN,
-			prev;
-	do {
-		prev = v;
-		v = start + i * axis.tickSize;
-		if ((min === undefined || v >= min) && (max === undefined || v <= max))
-			ticks.push(v);
-		++i;
-	} while (v < axis.max && v != prev);
-	if (max !== undefined && v > max)
-		ticks.push(v);
-	return ticks;
-};
-
-/**
- * tickFormatter extension to apply axis labels to last tick
- * Source: jquery.flot.js
- */
-vz.wui.tickFormatter = function (value, axis, tickIndex, ticks) {
-	// last tick: return label instead
-	if (ticks && tickIndex === ticks.length-1 && axis.options.axisLabel) {
-		var si = axis.options.si || {};
-		return '[' + si.prefix + si.unit + ']';
-	}
-
-	// first tick: calculate label formatting
-	if (ticks && ticks.length && tickIndex === 0) {
-		var maxValue = ticks[ticks.length-1];
-		axis.options.si = vz.wui.scaleNumberAndUnit(maxValue, axis.options.axisLabel);
-		if (maxValue * axis.options.si.scaler < 10) axis.tickDecimals = 1;
-	}
-
-	// scale value according to unit
-	value *= axis.options.si.scaler;
-
-	// flot original code
-	var factor = axis.tickDecimals ? Math.pow(10, axis.tickDecimals) : 1;
-	var formatted = "" + Math.round(value * factor) / factor;
-
-	if (axis.tickDecimals !== null) {
-		var decimal = formatted.indexOf(".");
-		var precision = decimal == -1 ? 0 : formatted.length - decimal - 1;
-		if (precision < axis.tickDecimals) {
-			return (precision ? formatted : formatted + ".") + ("" + factor).substr(1, axis.tickDecimals - precision);
-		}
-	}
-
-	return formatted;
 };
 
 /**
@@ -258,26 +102,10 @@ vz.wui.drawPlot = function () {
 			entity.selected ? vz.options.lineWidthSelected : entity.linewidth || vz.options.lineWidthDefault
 		);
 
-		// mangle data for "steps" curves by shifting one ts left ("step-before")
-		// if (style == 'steps') {
-		// 	tuples.unshift([entity.data.from, 1, 1]); // add new first ts
-		// 	for (i=0; i<tuples.length-1; i++) {
-		// 		tuples[i][1] = tuples[i+1][1];
-		// 	}
-		// }
-
-		// remove number of datapoints from each tuple to avoid flot fill error
-		if (fillstyle || entity.gap || style == 'bars') {
-			for (i=0; i<tuples.length; i++) {
-				maxTuples = Math.max(maxTuples, tuples[i][2]);
-				delete tuples[i][2];
-			}
-		}
-
 		// round timestamps for consumption mode
 		if (entity.isConsumptionMode()) {
 			var modeIndex = ['hour', 'day', 'month', 'year'].indexOf(vz.options.mode);
-
+console.log("Adjusting timestamps to "+vz.options.mode);
 			for (i=0; i<tuples.length; i++) {
 				tuples[i][0] = vz.wui.adjustTimestamp(tuples[i][0], true);
 			}
@@ -294,8 +122,10 @@ vz.wui.drawPlot = function () {
 			linewidth: linewidth,
 			linestyle: linestyle,
 			style: style,
+			consumption: entity.isConsumptionMode(),
 		};
 
+/*
 		if (['lines', 'steps', 'states'].indexOf(style) >= 0) {
 			$.extend(serie, {
 				lines: {
@@ -341,58 +171,139 @@ vz.wui.drawPlot = function () {
 				}
 			});
 		}
+*/
 
 		series.push(serie);
 	});
 
-	// bar chart formatting
-	if (vz.wui.isConsumptionMode() && series.length > 0) {
-		var barTypes = {
-			hour:  1,
-			day:   24,
-			week:  24 * 7,
-			month: 24 * 30,
-			year:  24 * 365
+	// configure chart
+	var datasets = vz.wui.prepareDatasets(series);
+	var config = {
+		type: 'line',
+		data: {
+			datasets: datasets,
+		},
+		options: {
+			responsive: true,
+			maintainAspectRatio: false,
+			scales: {
+				xAxes: [
+					vz.wui.timeAxis({
+						id: 'axis-bar',
+						display: false,
+					}),
+					vz.wui.timeAxis({
+						id: 'axis-time',
+					}),
+				],
+				yAxes: vz.wui.prepareYAxes(datasets)
+			},
+			tooltips: {
+				enabled: false
+				// mode: 'x',
+				// intersect: true
+			},
+			hover: {
+				mode: 'nearest'
+			}
+		}
+	};
+
+	vz.wui.configureOptionalBarMode(config, series);
+
+	if (vz.chart) {
+		vz.chart.destroy();
+		$('#plot').empty().append('<canvas id="flot"></canvas>');
+	}
+
+	var print = $.extend({}, config);
+	// print = JSON.stringify(print);
+	console.log(print);
+	var chart = new Chart($('#flot'), config);
+// console.log(chart);
+
+	vz.chart = chart;
+
+	// disable automatic refresh if we are in past
+	if (vz.options.refresh) {
+		if (vz.wui.tmaxnow) {
+			vz.wui.setTimeout();
+		} else {
+			vz.wui.clearTimeout('(suspended)');
+		}
+	} else {
+		vz.wui.clearTimeout();
+	}
+};
+
+/**
+ * Configure chartjs y axes
+ */
+vz.wui.prepareYAxes = function(datasets) {
+	var axes = [];
+console.log("datasets:");
+console.log(datasets);
+console.log("axes:");
+	vz.options.plot.yaxes.forEach(function(_axis, id) {
+		var axisId = "axis" + (id+1);
+console.log(_axis);
+
+		// check if axis is used - otherwise bail out
+		if (!datasets.some(function(dataset) {
+			return dataset.yAxisID == axisId;
+		})) {
+			var unit = _axis.axisLabel;
+			// console.log("Unused axis: " + id + " " + unit);
+			return;
+		}
+
+		var si = vz.wui.scaleNumberAndUnit(_axis.maxAbsValue);
+		si.precision = Math.max(0, vz.wui.getPrecision(si.number) - 1);
+
+		// defined axis and position
+		var axis = {
+			id: axisId,
+			ticks: {
+        callback: vz.wui.tickFormatter
+      },
+			position: _axis.position == 'right' ? 'right' : 'left',
+			si: si
 		};
 
-		// apply spacing around bars
-		var barWidth = barTypes[vz.options.mode] * 3.6e6 * (vz.options.plot.series.bars.usedSpace || 0.6) / index;
-
-		$.extend(plotOptions, {
-			bars: {
-				barWidth: Math.max(barWidth, 1)
-			}
-		});
-
-		// avoid confusing intermediate ticks in consumption mode
-		plotOptions.xaxis.minTickSize = [1, vz.options.mode];
-	}
-
-	// remove right hand margin space if no right yaxis defined and used
-	var yaxesAtRightSide = 0;
-	plotOptions.yaxes.forEach(function(axis) {
-		if (axis.position == 'right' && axis.axisLabel !== undefined) {
-			yaxesAtRightSide++;
+		// hide grid lines for secondary and right axes
+		if (axis.position == 'right' || (id > 0 && axis.position == 'left')) {
+			axis.gridLines = {
+				drawOnChartArea: false
+			};
 		}
+
+		// show axis label
+		if (_axis.axisLabel) {
+			axis.scaleLabel = {
+				display: true,
+				labelString: axis.si.prefix + _axis.axisLabel
+			};
+		}
+		if (_axis.min === undefined) {
+			// axis.min = 0;
+			axis.ticks = {
+				beginAtZero: true
+			};
+		}
+
+		axes.push(axis);
 	});
-	if (plotOptions.xaxis.reserveSpace === undefined && yaxesAtRightSide === 0) {
-		plotOptions.xaxis.reserveSpace = false;
-	}
 
-	// if (series.length === 0) {
-	// 	$('#overlay').html('<img src="images/empty.png" alt="no data..." /><p>nothing to plot...</p>');
-	// 	series.push({}); // add empty dataset to show axes
-	// }
-	// else {
-	// 	$('#overlay').empty();
-	// }
+	return axes;
+};
 
+vz.wui.prepareDatasets = function(series) {
 	// map datasets to chartjs
-	var datasets = [], labels;
+	var datasets = [];
 	series.forEach(function(serie) {
 		var dataset = {
 			type: 'line',
-			label: ['', serie.label, ''],
+			label: serie.label,
 			backgroundColor: serie.color,
 			borderColor: serie.color,
 			yAxisID: 'axis' + serie.yaxis,
@@ -425,25 +336,6 @@ vz.wui.drawPlot = function () {
 		}
 
 		if (serie.data) {
-			if (serie.style == 'bars' && labels === undefined) {
-				var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
-				console.log("periodLocale "+periodLocale);
-
-				var start = moment(vz.options.plot.xaxis.min);
-				var end = moment(vz.options.plot.xaxis.max);
-				console.log(start.format()+" - "+end.format());
-
-				var periods = moment.duration(end.diff(start));
-				console.log(periods.humanize());
-
-				var count = periods.as(periodLocale);
-				count = Math.floor(count);
-				console.log(count);
-
-				labels = Array(count).fill('x');
-				console.log(labels);
-			}
-
 			dataset.data = serie.data.map(function(t) {
 				if (serie.style == 'bars')
 					return t[1];
@@ -457,126 +349,126 @@ vz.wui.drawPlot = function () {
 		datasets.push(dataset);
 	});
 
-	// configure chartjs axes
-	var axes = [];
-	plotOptions.yaxes.forEach(function(_axis, id) {
-		var axisId = "axis" + (id+1);
+	return datasets;
+};
 
-		// check if axis is used
-		if (!datasets.some(function(dataset) {
-			return dataset.yAxisID == axisId;
-		})) {
+vz.wui.prepareCategoryLabels = function(series) {
+	var labels = [];
+
+	var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
+	var start = moment(vz.options.plot.xaxis.min);
+	var end = moment(vz.options.plot.xaxis.max);
+	var periods = moment.duration(end.diff(start));
+console.log("periodLocale "+periodLocale);
+console.log(start.format()+" - "+end.format());
+console.log(periods.humanize());
+
+	series.forEach(function(serie) {
+		if (serie.style !== 'bars')
 			return;
-		}
 
-		// defined axis and position
-		var axis = {
-			id: axisId,
-			position: _axis.position == 'right' ? 'right' : 'left'
-		};
-
-		// hide grid lines for secondary axes
-		if (axis.position == 'right') {
-			axis.gridLines = {
-				drawOnChartArea: false
-			};
-		}
-
-		// show axis label
-		if (_axis.axisLabel) {
-			axis.scaleLabel = {
-				display: true,
-			// lineHeight: 48,
-			// paddingTop: 400,
-				labelString: _axis.axisLabel
-			};
-		}
-		if (_axis.min === undefined) {
-			axis.ticks = {
-				beginAtZero: true
-			};
-		}
-
-		axes.push(axis);
-	});
-
-	// configure chartjs axes
-	var config = {
-		// responsive: true,
-		// maintainAspectRatio: false,
-		type: 'line',
-		data: {
-			datasets: datasets,
-			// labels: labels,
-		},
-		options: {
-			scales: {
-				xAxes: [{
-					type: 'category',
-					id: 'axis-bar',
-					display: false,
-					// labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'January', 'February', 'March', 'April', 'May', 'June', 'July', ],
-					labels: labels,
-					gridLines: {
-            offsetGridLines: true
-          },
-				}, {
-					type: 'time',
-					id: 'axis-time',
-					display: true,
-					// autoSkip: true,
-					time: {
-						displayFormats: {
-							'second': 'HH:mm:ss',
-							'minute': 'HH:mm:ss',
-							'hour': 'D. MMM HH:mm',
-							'day': 'D. MMM',
-							'quarter': '[Q]Q/YYYY',
-						},
-						min: vz.options.plot.xaxis.min,
-						max: vz.options.plot.xaxis.max,
-					},
-					ticks: {
-						maxRotation: 0,
-					}
-				}, ],
-				yAxes: axes
-			},
-			tooltips: {
-				enabled: false
+		// create label series
+		if (labels.length === 0) {
+			var current = moment(vz.wui.adjustTimestamp(start, true));
+			while (current.valueOf() < end.valueOf()) {
+				labels.push(current.valueOf());
+				current.add(1, periodLocale);
 			}
 		}
-	};
 
+		// assert matching data
+		if (labels.length !== serie.data.length) {
+			console.warn("Length mismatch:");
+			console.log(labels.length);
+			console.log(serie.data.length);
+
+			console.log(serie.data.map(function(t) {
+				return moment(t[0]).format('D. MMM');
+			}));
+		}
+/*
+		var current = start;
+
+		// create labels for series data
+		serie.data.forEach(function(tuple) {
+			console.log("  "+moment(tuple[0]).format());
+
+			while (current.valueOf() <= tuple[0]) {
+				console.log("> " + current.format());
+				labels.push(current.format('D. MMM'));
+				current.add(1, periodLocale);
+			}
+		});
+
+		// add trailing labels
+		while (current.valueOf() < end.valueOf()) {
+			console.log("> " + current.format());
+			labels.push(current.format('D. MMM'));
+			current.add(1, periodLocale);
+		}
+*/
+	});
+
+	console.log("category labels:");
+	console.log(labels.map(function(l) {
+		return moment(l).format('D. MMM HH:mm')
+	}));
+
+	return labels;
+};
+
+vz.wui.configureOptionalBarMode = function(config, series) {
 	// change chart options for bar mode
-	if (datasets.some(function(dataset) {
+	if (config.data.datasets.some(function(dataset) {
 		return dataset.type == 'bar';
 	})) {
+		var labels = vz.wui.prepareCategoryLabels(series);
+
 		config.type = 'bar';
-		// config.options.scales.xAxes.forEach(function(axis) {
-		// 	if (axis.id == 'axis-bar') {
-		// 		axis.display = true;
-		// 	}
-		// 	if (axis.id == 'axis-time') {
-		// 		axis.display = false;
-		// 	}
-		// });
+		config.data.labels = labels;
+
+		config.options.scales.xAxes.forEach(function(axis) {
+			if (axis.id == 'axis-bar') {
+				axis.display = true;
+			}
+			// if (axis.id == 'axis-time') {
+			// 	axis.display = false;
+			// }
+		});
 	}
+};
 
-	var print = $.extend({}, config);
-	print = JSON.stringify(print);
-	console.log(print);
-	var chart = new Chart($('#flot'), config);
-console.log(chart);
 
-	// disable automatic refresh if we are in past
-	if (vz.options.refresh) {
-		if (vz.wui.tmaxnow) {
-			vz.wui.setTimeout();
-		} else {
-			vz.wui.clearTimeout('(suspended)');
+vz.wui.tickFormatter = function(value, index, values) {
+	return value;
+
+	// format 0.0 as 0
+	var precision = value == 0.0 ? 0 : this.options.si.precision;
+	value = (value * this.options.si.scaler).toFixed(precision);
+  return value;
+};
+
+vz.wui.timeAxis = function(config)  {
+	return $.extend({}, {
+		type: 'time',
+		gridLines: {
+			display: false,
+      offsetGridLines: true
+    },
+		time: {
+			displayFormats: {
+				'second': 'HH:mm:ss',
+				'minute': 'HH:mm:ss',
+				'hour': 'D. MMM HH:mm',
+				'day': 'D. MMM',
+				'quarter': '[Q]Q/YYYY',
+			},
+			min: vz.options.plot.xaxis.min,
+			max: vz.options.plot.xaxis.max,
+		},
+		barPercentage: 0.8,
+		ticks: {
+			maxRotation: 0,
 		}
-	} else {
-		vz.wui.clearTimeout();
-	}
+	}, config);
 };

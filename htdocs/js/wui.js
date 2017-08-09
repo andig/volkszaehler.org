@@ -31,12 +31,14 @@
 vz.wui.init = function() {
 	vz.wui.initEvents();
 	vz.wui.resizePlot();
+	// vz.wui.drawPlot();
 
 	// resize handling
 	$(window).resize(vz.wui.resizePlot);
 	$('#accordion h3').click(function() {
 		// capture window height before toggling section to avoid miscalculation due to scrollbar flickering
 		var windowHeight = $(window).height();
+		console.log("height: "+windowHeight);
 		$(this).next().toggle(0, function() {
 			vz.wui.resizePlot(null, windowHeight);
 		});
@@ -103,9 +105,10 @@ vz.wui.init = function() {
 vz.wui.resizePlot = function(evt, windowHeight) {
 	// resize container depending on window vs. content height
 	var delta = (windowHeight || $(window).height()) - $('html').height();
-	$('#flot').height(Math.max($('#flot').height() + delta, vz.options.plot.minHeight || 300));
-	vz.options.tuples = Math.round($('#flot').width() / 3);
-
+	var height = Math.max($('#plot').height() + delta, vz.options.plot.minHeight || 300);
+	$('#plot').height(height);
+	vz.options.tuples = Math.round($('#plot').width() / 3);
+/*
 	if (vz.plot && vz.plot.resize) {
 		vz.plot.resize();
 		vz.plot.setupGrid();
@@ -113,8 +116,9 @@ vz.wui.resizePlot = function(evt, windowHeight) {
 	}
 	else {
 		// draw empty plot startup
-		vz.wui.drawPlot();
 	}
+*/
+	// vz.wui.drawPlot();
 };
 
 /**
@@ -532,6 +536,8 @@ vz.wui.zoomToPartialUpdate = function(to) {
  * Bind events to handle plot zooming & panning
  */
 vz.wui.initEvents = function() {
+	// return;
+
 	$('#plot')
 		.bind("plotselected", function (event, ranges) {
 			vz.wui.period = null;
@@ -827,14 +833,7 @@ vz.wui.scaleNumberAndUnit = function(number, unit, maxPrefix) {
 vz.wui.formatNumber = function(number, unit, maxPrefix) {
 	// determine si unit and adjust value
 	var si = vz.wui.scaleNumberAndUnit(number, unit, maxPrefix);
-
-	// precision, +1 digit for numbers < 1.0
-	var precision = (Math.abs(si.number) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
-		 Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
-
-	if (vz.options.maxPrecision[unit] !== undefined) {
-		precision = Math.min(vz.options.maxPrecision[unit], precision);
-	}
+	var precision = vz.wui.getPrecision(si.number, si.unit);
 
 	// rounding, si prefix and unit
 	number = si.number.toFixed(precision);
@@ -843,6 +842,21 @@ vz.wui.formatNumber = function(number, unit, maxPrefix) {
 	}
 
 	return number;
+};
+
+/**
+ * Get precision in digits
+ */
+vz.wui.getPrecision = function(value, unit) {
+	// precision, +1 digit for numbers < 1.0
+	var precision = (Math.abs(value) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
+		 Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(value))/Math.LN10)));
+
+	if (vz.options.maxPrecision[unit] !== undefined) {
+		precision = Math.min(vz.options.maxPrecision[unit], precision);
+	}
+
+	return precision;
 };
 
 /**
