@@ -60,64 +60,41 @@ vz.options = {
 };
 
 /**
+ * Time formatting options
+ */
+vz.options.time = {
+	'second': 'HH:mm:ss',
+	'minute': 'HH:mm:ss',
+	'hour': 'D. MMM HH:mm',
+	'day': 'D. MMM',
+	'month': 'MMM YYYY',
+	'quarter': '[Q]Q/YYYY',
+	'detailed': 'D. MMM YYYY HH:mm:ss'
+};
+
+/**
  * Plot options are passed on to flot
  */
 vz.options.plot = {
 	colors: ['#579D1C', '#7E0021', '#FFD320', '#FF420E', '#004586', '#0084D1', '#C5000B', '#FF950E', '#4B1F6F', '#AECF00', '#314004', '#83CAFF'],
-	// series: {
-	// 	shadowSize: 0,
-	// 	points: {
-	// 		radius: 3
-	// 	},
-	// 	bars: {
-	// 		fill:      0.8,
-	// 		lineWidth: 0,
-	// 		usedSpace: 0.8 // percent of available space that bars should occupy
-	// 	}
-	// },
- // 	legend: {
-	// 	show: true,
-	// 	position: 'nw',
-	// 	backgroundOpacity: 0.80,
-	// },
 	xaxis: {
 		mode: 'time',
 		timezone: 'browser'
 	},
-	// axisLabels: {
-	// 	show: false // set to true to show labels
-	// },
 	yaxes: [
 		{
 			axisLabel: 'W', // assign el. energy to first axis- remove if not used
-			// tickFormatter: vz.wui.tickFormatter		// show axis label
 		},
 		{
 			axisLabel: 'Wh', // assign el. energy to first axis- remove if not used
-			// tickFormatter: vz.wui.tickFormatter		// show axis label
 		},
 		{
 			axisLabel: '°C', // assign el. energy to first axis- remove if not used
-			// tickFormatter: vz.wui.tickFormatter		// show axis label
 		},
 		{
-			// alignTicksWithAxis: 1,
 			position: 'right',
-			// tickFormatter: vz.wui.tickFormatter		// show axis label
 		}
-	],
-	// selection: { mode: 'x' },
-	// crosshair: {
-	// 	mode: 'x',
-	// 	leaveCallback: vz.wui.plotLeave
-	// },
-	// grid: {
-	// 	hoverable: true,
-	// 	autoHighlight: true,
-	// 	borderWidth:  1,
-	// 	borderColor: '#bbb',
-	// 	margin: 0
-	// }
+	]
 };
 
 vz.options.saveCookies = function() {

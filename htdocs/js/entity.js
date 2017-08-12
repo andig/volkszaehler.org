@@ -757,11 +757,11 @@ Entity.prototype.updateDOMRow = function() {
 		if (this.data.min)
 			$('.min', row)
 			.text(vz.wui.formatNumber(this.data.min[1], unit))
-			.attr('title', $.plot.formatDate(new Date(this.data.min[0]), '%d. %b %y %H:%M:%S', vz.options.monthNames, vz.options.dayNames, true));
+			.attr('title', moment(this.data.min[0]).format(vz.options.time.detailed));
 		if (this.data.max)
 			$('.max', row)
 			.text(vz.wui.formatNumber(this.data.max[1], unit))
-			.attr('title', $.plot.formatDate(new Date(this.data.max[0]), '%d. %b %y %H:%M:%S', vz.options.monthNames, vz.options.dayNames, true));
+			.attr('title', moment(this.data.max[0]).format(vz.options.time.detailed));
 		if (this.data.average !== undefined)
 			$('.average', row)
 			.text(vz.wui.formatNumber(this.data.average, unit));

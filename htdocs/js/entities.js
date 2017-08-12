@@ -156,7 +156,8 @@ vz.entities.each = function(cb, recursive) {
  */
 vz.entities.eachActiveChannel = function(cb) {
 	this.each(function(entity) {
-		if (entity.hasData() && entity.data && entity.data.tuples && entity.data.tuples.length > 0) {
+		// if (entity.hasData() && entity.data && entity.data.tuples && entity.data.tuples.length > 0) {
+		if (entity.hasData()) {
 			cb(entity);
 		}
 	}, true);

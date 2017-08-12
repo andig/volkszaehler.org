@@ -108,17 +108,6 @@ vz.wui.resizePlot = function(evt, windowHeight) {
 	var height = Math.max($('#plot').height() + delta, vz.options.plot.minHeight || 300);
 	$('#plot').height(height);
 	vz.options.tuples = Math.round($('#plot').width() / 3);
-/*
-	if (vz.plot && vz.plot.resize) {
-		vz.plot.resize();
-		vz.plot.setupGrid();
-		vz.plot.draw();
-	}
-	else {
-		// draw empty plot startup
-	}
-*/
-	// vz.wui.drawPlot();
 };
 
 /**

@@ -30,12 +30,12 @@
  */
 vz.wui.updateHeadline = function() {
 	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min,
-			format = '%a %e. %b %Y',
+			format = 'D. MMM YYYY',
 			from = vz.options.plot.xaxis.min,
 			to = vz.options.plot.xaxis.max;
 
 	if (delta < 3*24*3600*1000) {
-		format += ' %H:%M'; // under 3 days
+		format += ' HH:mm'; // under 3 days
 		if (delta < 5*60*1000) format += ':%S'; // under 5 minutes
 	}
 	else {
@@ -44,16 +44,8 @@ vz.wui.updateHeadline = function() {
 	}
 
 	// timezone-aware dates if timezone-js is included
-	from = $.plot.formatDate(
-		$.plot.dateGenerator(from, vz.options.plot.xaxis),
-		format, vz.options.monthNames, vz.options.dayNames, true
-	);
-	to = $.plot.formatDate(
-		$.plot.dateGenerator(to, vz.options.plot.xaxis),
-		format, vz.options.monthNames, vz.options.dayNames, true
-	);
-	// from = $.plot.formatDate(new Date(from), format);
-	// from = $.plot.formatDate(new Date(to), format);
+	from = moment(from).format(format);
+	to = moment(to).format(format);
 
 	$('#title').html(from + ' - ' + to);
 };
@@ -101,15 +93,6 @@ vz.wui.drawPlot = function () {
 		var linewidth = parseFloat(vz.options.linewidth ||
 			entity.selected ? vz.options.lineWidthSelected : entity.linewidth || vz.options.lineWidthDefault
 		);
-
-		// round timestamps for consumption mode
-		if (entity.isConsumptionMode()) {
-			var modeIndex = ['hour', 'day', 'month', 'year'].indexOf(vz.options.mode);
-console.log("Adjusting timestamps to "+vz.options.mode);
-			for (i=0; i<tuples.length; i++) {
-				tuples[i][0] = vz.wui.adjustTimestamp(tuples[i][0], true);
-			}
-		}
 
 		var serie = {
 			data: tuples,
@@ -176,13 +159,16 @@ console.log("Adjusting timestamps to "+vz.options.mode);
 		series.push(serie);
 	});
 
+	// reorder - bars last
+	series =
+		series.filter(function(serie) { return serie.style != 'bars'; }).concat(
+		series.filter(function(serie) { return serie.style == 'bars'; })
+	);
+
 	// configure chart
-	var datasets = vz.wui.prepareDatasets(series);
 	var config = {
 		type: 'line',
-		data: {
-			datasets: datasets,
-		},
+		data: { },
 		options: {
 			responsive: true,
 			maintainAspectRatio: false,
@@ -190,18 +176,24 @@ console.log("Adjusting timestamps to "+vz.options.mode);
 				xAxes: [
 					vz.wui.timeAxis({
 						id: 'axis-bar',
+						type: 'category',
 						display: false,
+						gridLines: {
+							display: false
+						},
+						ticks: {
+							maxRotation: 0,
+							stepSize: 1,
+							callback: vz.wui.tickCategoryFormatter
+						}
 					}),
 					vz.wui.timeAxis({
 						id: 'axis-time',
 					}),
 				],
-				yAxes: vz.wui.prepareYAxes(datasets)
 			},
 			tooltips: {
 				enabled: false
-				// mode: 'x',
-				// intersect: true
 			},
 			hover: {
 				mode: 'nearest'
@@ -209,7 +201,16 @@ console.log("Adjusting timestamps to "+vz.options.mode);
 		}
 	};
 
+	var datasets = vz.wui.prepareDatasets(config, series);
+	var yaxes = vz.wui.prepareYAxes(config, datasets);
 	vz.wui.configureOptionalBarMode(config, series);
+
+console.log("series:");
+console.log(series);
+console.log("datasets:");
+console.log(datasets);
+console.log("axes:");
+console.log(yaxes);
 
 	if (vz.chart) {
 		vz.chart.destroy();
@@ -217,10 +218,10 @@ console.log("Adjusting timestamps to "+vz.options.mode);
 	}
 
 	var print = $.extend({}, config);
+	vz.chartconfig = JSON.stringify(print);
 	// print = JSON.stringify(print);
 	console.log(print);
 	var chart = new Chart($('#flot'), config);
-// console.log(chart);
 
 	vz.chart = chart;
 
@@ -239,24 +240,20 @@ console.log("Adjusting timestamps to "+vz.options.mode);
 /**
  * Configure chartjs y axes
  */
-vz.wui.prepareYAxes = function(datasets) {
+vz.wui.prepareYAxes = function(config, datasets) {
 	var axes = [];
-console.log("datasets:");
-console.log(datasets);
-console.log("axes:");
 	vz.options.plot.yaxes.forEach(function(_axis, id) {
 		var axisId = "axis" + (id+1);
-console.log(_axis);
 
 		// check if axis is used - otherwise bail out
 		if (!datasets.some(function(dataset) {
 			return dataset.yAxisID == axisId;
 		})) {
 			var unit = _axis.axisLabel;
-			// console.log("Unused axis: " + id + " " + unit);
 			return;
 		}
 
+		// prepare scaling for tick formatter
 		var si = vz.wui.scaleNumberAndUnit(_axis.maxAbsValue);
 		si.precision = Math.max(0, vz.wui.getPrecision(si.number) - 1);
 
@@ -264,8 +261,8 @@ console.log(_axis);
 		var axis = {
 			id: axisId,
 			ticks: {
-        callback: vz.wui.tickFormatter
-      },
+				callback: vz.wui.tickValueFormatter
+			},
 			position: _axis.position == 'right' ? 'right' : 'left',
 			si: si
 		};
@@ -285,7 +282,6 @@ console.log(_axis);
 			};
 		}
 		if (_axis.min === undefined) {
-			// axis.min = 0;
 			axis.ticks = {
 				beginAtZero: true
 			};
@@ -294,12 +290,15 @@ console.log(_axis);
 		axes.push(axis);
 	});
 
+	config.options.scales.yAxes = axes;
 	return axes;
 };
 
-vz.wui.prepareDatasets = function(series) {
-	// map datasets to chartjs
-	var datasets = [];
+/**
+ * Map series to chartjs datasets
+ */
+vz.wui.prepareDatasets = function(config, series) {
+	var datasets = [], labels;
 	series.forEach(function(serie) {
 		var dataset = {
 			type: 'line',
@@ -335,84 +334,62 @@ vz.wui.prepareDatasets = function(series) {
 				break;
 		}
 
-		if (serie.data) {
+		// lines and points
+		if (serie.data && serie.style != 'bars') {
 			dataset.data = serie.data.map(function(t) {
-				if (serie.style == 'bars')
-					return t[1];
-				return { // line
+				return {
 					x: t[0],
 					y: t[1],
 				};
 			});
 		}
 
+		// bars
+		if (serie.data && serie.style == 'bars') {
+			if (!config.data.labels) {
+				// config.type = 'bar';
+				// config.data.labels = vz.wui.prepareCategoryLabels();
+			}
+
+			// add missing data points
+			var data = [];
+			var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
+			var current = moment(vz.options.plot.xaxis.min).endOf(periodLocale);
+
+			serie.data.forEach(function(t) {
+				var timestamp = t[0];
+				while (timestamp > current.valueOf()) {
+					data.push(null);
+				}
+
+				data.push(t[1]);
+				current.add(1, periodLocale);
+			});
+
+			dataset.data = data;
+		}
+
 		datasets.push(dataset);
 	});
 
+	config.data.datasets = datasets;
 	return datasets;
 };
 
-vz.wui.prepareCategoryLabels = function(series) {
+vz.wui.prepareCategoryLabels = function() {
 	var labels = [];
 
 	var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
 	var start = moment(vz.options.plot.xaxis.min);
 	var end = moment(vz.options.plot.xaxis.max);
-	var periods = moment.duration(end.diff(start));
-console.log("periodLocale "+periodLocale);
-console.log(start.format()+" - "+end.format());
-console.log(periods.humanize());
 
-	series.forEach(function(serie) {
-		if (serie.style !== 'bars')
-			return;
-
-		// create label series
-		if (labels.length === 0) {
-			var current = moment(vz.wui.adjustTimestamp(start, true));
-			while (current.valueOf() < end.valueOf()) {
-				labels.push(current.valueOf());
-				current.add(1, periodLocale);
-			}
-		}
-
-		// assert matching data
-		if (labels.length !== serie.data.length) {
-			console.warn("Length mismatch:");
-			console.log(labels.length);
-			console.log(serie.data.length);
-
-			console.log(serie.data.map(function(t) {
-				return moment(t[0]).format('D. MMM');
-			}));
-		}
-/*
-		var current = start;
-
-		// create labels for series data
-		serie.data.forEach(function(tuple) {
-			console.log("  "+moment(tuple[0]).format());
-
-			while (current.valueOf() <= tuple[0]) {
-				console.log("> " + current.format());
-				labels.push(current.format('D. MMM'));
-				current.add(1, periodLocale);
-			}
-		});
-
-		// add trailing labels
-		while (current.valueOf() < end.valueOf()) {
-			console.log("> " + current.format());
-			labels.push(current.format('D. MMM'));
-			current.add(1, periodLocale);
-		}
-*/
-	});
-
-	console.log("category labels:");
-	console.log(labels.map(function(l) {
-		return moment(l).format('D. MMM HH:mm')
-	}));
+	// create label series
+	var current = moment(vz.wui.adjustTimestamp(start, true));
+	// var current = moment(vz.wui.adjustTimestamp(start, false));
+	while (current.valueOf() < end.valueOf()) {
+		labels.push(current.valueOf());
+		current.add(1, periodLocale);
+	}
 
 	return labels;
 };
@@ -422,47 +399,48 @@ vz.wui.configureOptionalBarMode = function(config, series) {
 	if (config.data.datasets.some(function(dataset) {
 		return dataset.type == 'bar';
 	})) {
-		var labels = vz.wui.prepareCategoryLabels(series);
-
+		// global options
 		config.type = 'bar';
-		config.data.labels = labels;
+		config.data.labels = vz.wui.prepareCategoryLabels();
 
+		// scale visibility
 		config.options.scales.xAxes.forEach(function(axis) {
 			if (axis.id == 'axis-bar') {
 				axis.display = true;
+				axis.time.unit = vz.options.mode;
 			}
-			// if (axis.id == 'axis-time') {
-			// 	axis.display = false;
-			// }
+			if (axis.id == 'axis-time') {
+				// axis.display = false;
+			}
 		});
 	}
 };
 
-
-vz.wui.tickFormatter = function(value, index, values) {
+vz.wui.tickValueFormatter = function(value, index, values) {
 	return value;
 
 	// format 0.0 as 0
 	var precision = value == 0.0 ? 0 : this.options.si.precision;
 	value = (value * this.options.si.scaler).toFixed(precision);
-  return value;
+	return value;
+};
+
+vz.wui.tickCategoryFormatter = function(value, index, values) {
+	var format = vz.options.time[vz.options.mode];
+	// console.log(vz.options.mode);
+	// console.log(format);
+	return moment(value).format(format);
 };
 
 vz.wui.timeAxis = function(config)  {
 	return $.extend({}, {
 		type: 'time',
 		gridLines: {
-			display: false,
-      offsetGridLines: true
-    },
+			display: true,
+			offsetGridLines: false
+		},
 		time: {
-			displayFormats: {
-				'second': 'HH:mm:ss',
-				'minute': 'HH:mm:ss',
-				'hour': 'D. MMM HH:mm',
-				'day': 'D. MMM',
-				'quarter': '[Q]Q/YYYY',
-			},
+			displayFormats: vz.options.time,
 			min: vz.options.plot.xaxis.min,
 			max: vz.options.plot.xaxis.max,
 		},
