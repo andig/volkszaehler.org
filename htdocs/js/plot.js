@@ -168,6 +168,9 @@ vz.wui.drawPlot = function () {
 	// configure chart
 	var config = {
 		type: 'line',
+		plugins: {
+			axispadding: null
+		},
 		data: { },
 		options: {
 			responsive: true,
@@ -179,7 +182,7 @@ vz.wui.drawPlot = function () {
 						type: 'category',
 						display: false,
 						gridLines: {
-							display: false
+							display: true,
 						},
 						ticks: {
 							maxRotation: 0,
@@ -193,7 +196,24 @@ vz.wui.drawPlot = function () {
 				],
 			},
 			tooltips: {
-				enabled: false
+				enabled: true,
+				callbacks: {
+					title: function(itemArray, data) {
+						var item = itemArray[0];
+						if (typeof item.xLabel == "string") {
+							return item.xLabel;
+						}
+						var format = vz.options.time['day'];
+						return moment(item.xLabel).format(format);
+					},
+					label: function(item, data) {
+						var dataset = data.datasets[item.datasetIndex];
+						var scale = this._chart.scales[dataset.yAxisID];
+						var dataPoint = item.yLabel;
+						item = dataset.label +': ' +  vz.wui.formatNumber(dataPoint, scale.options.si.unit);
+						return item;
+					}
+				}
 			},
 			hover: {
 				mode: 'nearest'
@@ -238,63 +258,6 @@ console.log(yaxes);
 };
 
 /**
- * Configure chartjs y axes
- */
-vz.wui.prepareYAxes = function(config, datasets) {
-	var axes = [];
-	vz.options.plot.yaxes.forEach(function(_axis, id) {
-		var axisId = "axis" + (id+1);
-
-		// check if axis is used - otherwise bail out
-		if (!datasets.some(function(dataset) {
-			return dataset.yAxisID == axisId;
-		})) {
-			var unit = _axis.axisLabel;
-			return;
-		}
-
-		// prepare scaling for tick formatter
-		var si = vz.wui.scaleNumberAndUnit(_axis.maxAbsValue);
-		si.precision = Math.max(0, vz.wui.getPrecision(si.number) - 1);
-
-		// defined axis and position
-		var axis = {
-			id: axisId,
-			ticks: {
-				callback: vz.wui.tickValueFormatter
-			},
-			position: _axis.position == 'right' ? 'right' : 'left',
-			si: si
-		};
-
-		// hide grid lines for secondary and right axes
-		if (axis.position == 'right' || (id > 0 && axis.position == 'left')) {
-			axis.gridLines = {
-				drawOnChartArea: false
-			};
-		}
-
-		// show axis label
-		if (_axis.axisLabel) {
-			axis.scaleLabel = {
-				display: true,
-				labelString: axis.si.prefix + _axis.axisLabel
-			};
-		}
-		if (_axis.min === undefined) {
-			axis.ticks = {
-				beginAtZero: true
-			};
-		}
-
-		axes.push(axis);
-	});
-
-	config.options.scales.yAxes = axes;
-	return axes;
-};
-
-/**
  * Map series to chartjs datasets
  */
 vz.wui.prepareDatasets = function(config, series) {
@@ -309,7 +272,8 @@ vz.wui.prepareDatasets = function(config, series) {
 			xAxisID: 'axis-time',
 			borderWidth: serie.linewidth,
 			fill: false,
-			pointRadius: 0
+			pointRadius: 0,
+			hitRadius: 20
 		};
 
 		switch (serie.style) {
@@ -320,8 +284,23 @@ vz.wui.prepareDatasets = function(config, series) {
 				dataset.steppedLine = 'before';
 				break;
 			case 'bars':
-				dataset.type = 'bar';
-				dataset.xAxisID = 'axis-bar';
+				$.extend(dataset, {
+					type: 'bar',
+					xAxisID: 'axis-bar'
+				});
+				break;
+			case 'points':
+				$.extend(dataset, {
+					showLine: false,
+					pointStyle: 'circle',
+					pointRadius: 3,
+					pointBackgroundColor: "rgba(220,220,220,0)",
+					pointBorderColor: serie.color,
+					pointBorderWidth: serie.linewidth,
+					backgroundColor: null,
+					borderColor: null,
+					borderWidth: null
+				});
 				break;
 		}
 
@@ -346,12 +325,7 @@ vz.wui.prepareDatasets = function(config, series) {
 
 		// bars
 		if (serie.data && serie.style == 'bars') {
-			if (!config.data.labels) {
-				// config.type = 'bar';
-				// config.data.labels = vz.wui.prepareCategoryLabels();
-			}
-
-			// add missing data points
+			// add missing data points to match the labels
 			var data = [];
 			var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
 			var current = moment(vz.options.plot.xaxis.min).endOf(periodLocale);
@@ -374,6 +348,66 @@ vz.wui.prepareDatasets = function(config, series) {
 
 	config.data.datasets = datasets;
 	return datasets;
+};
+
+
+/**
+ * Configure chartjs y axes
+ */
+vz.wui.prepareYAxes = function(config, datasets) {
+	var axes = [];
+	vz.options.plot.yaxes.forEach(function(_axis, id) {
+		var axisId = "axis" + (id+1);
+
+		// check if axis is used - otherwise bail out
+		if (!datasets.some(function(dataset) {
+			return dataset.yAxisID == axisId;
+		})) {
+			return;
+		}
+
+		// prepare scaling for tick formatter
+		var si = vz.wui.scaleNumberAndUnit(_axis.maxAbsValue, _axis.axisLabel);
+		si.precision = Math.max(0, vz.wui.getPrecision(si.number) - 1);
+
+		// defined axis and position
+		var axis = {
+			id: axisId,
+			ticks: {
+				callback: vz.wui.tickValueFormatter
+			},
+			position: _axis.position == 'right' ? 'right' : 'left',
+			unit: _axis.axisLabel,
+			si: si
+		};
+
+		// hide grid lines for secondary and right axes
+		if (axis.position == 'right' || (id > 0 && axis.position == 'left')) {
+			axis.gridLines = {
+				drawOnChartArea: false
+			};
+		}
+
+		// show axis label
+		if (_axis.axisLabel) {
+			axis.scaleLabel = {
+				display: true,
+				labelString: axis.si.prefix + _axis.axisLabel
+			};
+		}
+
+		// start at zero
+		if (_axis.min === 0 || _axis.min === undefined) {
+			$.extend(axis.ticks, {
+				beginAtZero: true
+			});
+		}
+
+		axes.push(axis);
+	});
+
+	config.options.scales.yAxes = axes;
+	return axes;
 };
 
 vz.wui.prepareCategoryLabels = function() {
@@ -410,15 +444,13 @@ vz.wui.configureOptionalBarMode = function(config, series) {
 				axis.time.unit = vz.options.mode;
 			}
 			if (axis.id == 'axis-time') {
-				// axis.display = false;
+				axis.display = false;
 			}
 		});
 	}
 };
 
 vz.wui.tickValueFormatter = function(value, index, values) {
-	return value;
-
 	// format 0.0 as 0
 	var precision = value == 0.0 ? 0 : this.options.si.precision;
 	value = (value * this.options.si.scaler).toFixed(precision);
@@ -447,6 +479,8 @@ vz.wui.timeAxis = function(config)  {
 		barPercentage: 0.8,
 		ticks: {
 			maxRotation: 0,
+			major: false,
+			minor: false,
 		}
 	}, config);
 };
