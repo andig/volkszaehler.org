@@ -29,7 +29,6 @@ use Doctrine\ORM\EntityManager;
 use Volkszaehler\Model;
 use Volkszaehler\Controller\EntityController;
 use Volkszaehler\Interpreter\Virtual\InterpreterCoordinator;
-use Volkszaehler\Interpreter\InterpreterInterface;
 
 // http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10
 
@@ -56,7 +55,7 @@ class Battery implements BlockInterface {
 		$this->createParameters(array('charge', 'discharge', 'capacity'));
 
 		// output channel
-		$channel = $this->channelFactory('virtualsensor');
+		$channel = $this->channelFactory('virtualsensor', array('unit' => 'W'));
 
 		foreach (array('charge', 'discharge') as $function) {
 			$this->addInput($function);
@@ -82,19 +81,6 @@ class Battery implements BlockInterface {
 		// create proxy iterator
 		$this->addCoordinatedInterpreter($key, $interpreter);
 	}
-
-	// public function addProxy($key, $interpreter) {
-	// 	$proxy = new Virtual\InterpreterProxy($interpreter);
-	// 	$this->interpreters[$key] = $proxy;
-
-	// 	// add timestamp iterator to generator
-	// 	$iterator = new Virtual\TimestampIterator($proxy->getIterator());
-	// 	$this->timestampGenerator->add($iterator);
-	// }
-
-	// public function getProxy($key) {
-	// 	return $this->interpreters[$key];
-	// }
 
 	protected function createParameters($parameters) {
 		foreach ($parameters as $parameter) {
@@ -124,39 +110,6 @@ class Battery implements BlockInterface {
 		}
 
 		return $channel;
-	}
-
-	public function getIterator() {
-
-	}
-
-
-	public function getFrom() {
-		return 0;
-		return $this->from;
-	}
-
-	public function getTo() {
-		return 0;
-		return $this->to;
-	}
-
-	/**
-	 * Calculates the consumption
-	 *
-	 * @return float total consumption in Wh
-	 */
-	public function getConsumption() {
-		return 0;
-	}
-
-	/**
-	 * Get Average
-	 *
-	 * @return float average
-	 */
-	public function getAverage() {
-		return 0;
 	}
 }
 
