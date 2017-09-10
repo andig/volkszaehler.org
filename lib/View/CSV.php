@@ -26,7 +26,7 @@ namespace Volkszaehler\View;
 use Symfony\Component\HttpFoundation\Request;
 
 use Volkszaehler\Util;
-use Volkszaehler\Interpreter;
+use Volkszaehler\Interpreter\InterpreterInterface;
 
 /**
  * CSV view
@@ -63,10 +63,10 @@ class CSV extends View {
 	 * @param mixed $data
 	 */
 	public function add($data) {
-		if ($data instanceof Interpreter\Interpreter) {
+		if ($data instanceof InterpreterInterface) {
 			$this->addData($data);
 		}
-		elseif (is_array($data) && isset($data[0]) && $data[0] instanceof Interpreter\Interpreter) {
+		elseif (is_array($data) && isset($data[0]) && $data[0] instanceof InterpreterInterface) {
 			foreach ($data as $interpreter) {
 				$this->add($interpreter);
 			}
@@ -126,11 +126,11 @@ class CSV extends View {
 	/**
 	 * Add data to output queue
 	 *
-	 * @param Interpreter\InterpreterInterface $interpreter
+	 * @param InterpreterInterface $interpreter
 	 * @param boolean $children
 	 * @todo  Aggregate first is assumed- this deviates from json view behaviour
 	 */
-	protected function addData(Interpreter\Interpreter $interpreter) {
+	protected function addData(InterpreterInterface $interpreter) {
 		$this->response->headers->set(
 			'Content-Disposition', 'attachment; ' .
 				'filename="' . strtolower($interpreter->getEntity()->getProperty('title')) . '.csv" '

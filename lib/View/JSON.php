@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-use Volkszaehler\Interpreter;
+use Volkszaehler\Interpreter\InterpreterInterface;
 use Volkszaehler\Util;
 use Volkszaehler\Model;
 
@@ -163,11 +163,11 @@ class JSON extends View {
 
 			$this->content .= '"' . $key . '":';
 
-			if ($data instanceof Interpreter\Interpreter) {
+			if ($data instanceof InterpreterInterface) {
 				// single interpreter
 				$this->renderInterpreter($data);
 			}
-			elseif (is_array($data) && isset($data[0]) && $data[0] instanceof Interpreter\Interpreter) {
+			elseif (is_array($data) && isset($data[0]) && $data[0] instanceof InterpreterInterface) {
 				// array of interpreters
 				$this->content .= '[';
 				foreach ($data as $key => $interpreter) {
@@ -227,7 +227,7 @@ class JSON extends View {
 	 *
 	 * See comments regarding StreamedResponse at renderDeferred()
 	 */
-	protected function renderInterpreter(Interpreter\Interpreter $interpreter) {
+	protected function renderInterpreter(InterpreterInterface $interpreter) {
 		$this->content .= '{"tuples":[';
 
 		// start with iterating through PDO result set to populate interpreter header data
@@ -268,7 +268,7 @@ class JSON extends View {
 	 * @param mixed $data
 	 */
 	public function add($data) {
-		if ($data instanceof Interpreter\Interpreter) {
+		if ($data instanceof InterpreterInterface) {
 			$this->json['data'] = $data;
 		}
 		elseif ($data instanceof Model\Entity) {
@@ -365,7 +365,7 @@ class JSON extends View {
 			elseif ($value instanceof Model\Entity) {
 				$refNode[$index] = self::convertEntity($value);
 			}
-			elseif ($value instanceof Interpreter\Interpreter) {
+			elseif ($value instanceof InterpreterInterface) {
 				// special case: interpreters are always added to the root node
 				if (!isset($this->json['data'])) {
 					$this->json['data'] = array();

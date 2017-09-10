@@ -33,16 +33,16 @@ interface InterpreterInterface extends \Traversable {
 
 	public function convertRawTuple($row);
 
+	public function getRowCount();
+
 	public function getFrom();
 	public function getTo();
 
 	public function getMin();
 	public function getMax();
 
-	public function getConsumption();
-	public function getAverage();
-
-	public function getRowCount();
+	// public function getConsumption();
+	// public function getAverage();
 }
 
 ?>

@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use Volkszaehler\Util;
-use Volkszaehler\Interpreter;
+use Volkszaehler\Interpreter\InterpreterInterface;
 
 /**
  * Plain text view
@@ -92,11 +92,11 @@ class Text extends CSV {
 	/**
 	 * Add data to output queue
 	 *
-	 * @param Interpreter\InterpreterInterface $interpreter
+	 * @param InterpreterInterface $interpreter
 	 * @param boolean $children
 	 * @todo  Aggregate first is assumed- this deviates from json view behaviour
 	 */
-	protected function addData(Interpreter\Interpreter $interpreter) {
+	protected function addData(InterpreterInterface $interpreter) {
 		// echo "uuid:' . $interpreter->getEntity()->getUuid() . PHP_EOL;
 		// echo "title:' . $interpreter->getEntity()->getProperty('title') . PHP_EOL;
 

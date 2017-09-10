@@ -25,7 +25,7 @@ namespace Volkszaehler\View;
 
 use Symfony\Component\HttpFoundation\Request;
 
-use Volkszaehler\Interpreter;
+use Volkszaehler\Interpreter\InterpreterInterface;
 use Volkszaehler\Model;
 use Volkszaehler\Util;
 
@@ -148,10 +148,10 @@ class JpGraph extends View {
 	 * @param mixed $data
 	 */
 	public function add($data) {
-		if ($data instanceof Interpreter\Interpreter) {
+		if ($data instanceof InterpreterInterface) {
 			$this->addData($data);
 		}
-		elseif (is_array($data) && isset($data[0]) && $data[0] instanceof Interpreter\Interpreter) {
+		elseif (is_array($data) && isset($data[0]) && $data[0] instanceof InterpreterInterface) {
 			foreach ($data as $interpreter) {
 				$this->add($interpreter);
 			}
