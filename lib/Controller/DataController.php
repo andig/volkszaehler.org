@@ -30,6 +30,7 @@ use Doctrine\ORM\ORMException;
 use Volkszaehler\Model;
 use Volkszaehler\Util;
 use Volkszaehler\Interpreter\Interpreter;
+use Volkszaehler\Interpreter\Blocks\BlockManager;
 use Volkszaehler\View\View;
 
 /**
@@ -40,6 +41,8 @@ use Volkszaehler\View\View;
  */
 class DataController extends Controller {
 
+	use BlockControllerTrait;
+
 	const OPT_SKIP_DUPLICATES = 'skipduplicates';
 
 	protected $options;	// optional request parameters
@@ -48,6 +51,9 @@ class DataController extends Controller {
 		parent::__construct($request, $em, $view);
 
 		$this->options = self::makeArray(strtolower($this->getParameters()->get('options')));
+
+		// any blocks defined?
+		$this->setupBlocks();
 	}
 
 	/**
@@ -90,7 +96,10 @@ class DataController extends Controller {
 
 		// single UUID
 		if (is_string($uuid)) {
-			if (!Util\UUID::validate($uuid)) {
+			if (BlockManager::getInstance()->has($uuid)) {
+				$entity = BlockManager::getInstance()->get($uuid);
+			}
+			elseif (!Util\UUID::validate($uuid)) {
 				// allow retrieving entity by name
 				try {
 					$entity = $this->getSingleEntityByName($uuid);
