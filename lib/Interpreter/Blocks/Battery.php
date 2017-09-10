@@ -49,21 +49,24 @@ class Battery implements BlockInterface {
 
 		$this->groupBy = $this->request->query->get('group');
 
-		$this->blockManager = BlockManager::getInstance();
 		$this->setupCoordinator();
 
 		$this->createParameters(array('charge', 'discharge', 'capacity'));
+		$this->createParameters(array('efficiency'), true);
 
-		// output channel
-		$channel = $this->channelFactory('virtualsensor', array('unit' => 'W'));
-
+		$channel = $this->channelFactory('virtualconsumption', array('unit' => 'W'));
 		foreach (array('charge', 'discharge') as $function) {
 			$this->addInput($function);
-			$interpreter = new BatteryInterpreter($this, $channel, $function);
-			$this->blockManager->add($name . $function, $interpreter);
+			$this->addOutput($channel, $function);
 		}
+
+		$channel = $this->channelFactory('virtualsensor', array('unit' => 'Wh'));
+		$this->addOutput($channel, 'level');
 	}
 
+	/**
+	 * Create input interpreter
+	 */
 	protected function addInput($key) {
 		$from = $this->request->query->get('from');
 		$to = $this->request->query->get('to');
@@ -82,11 +85,25 @@ class Battery implements BlockInterface {
 		$this->addCoordinatedInterpreter($key, $interpreter);
 	}
 
-	protected function createParameters($parameters) {
+	/**
+	 * Create output interpreter
+	 */
+	protected function addOutput($channel, $function) {
+		$interpreter = new BatteryInterpreter($this, $channel, $function);
+		BlockManager::getInstance()->add($this->name . $function, $interpreter);
+	}
+
+	/**
+	 * Create properties from request parameters
+	 */
+	protected function createParameters($parameters, $optional = false) {
 		foreach ($parameters as $parameter) {
 			$parameterName = $this->name . $parameter;
 
 			if (!$this->request->query->has($parameterName)) {
+				if ($optional) {
+					continue;
+				}
 				throw new \Exception('Missing parameter ' . $parameterName . ' for battery');
 			}
 
@@ -94,9 +111,17 @@ class Battery implements BlockInterface {
 		}
 	}
 
-	protected function getParameter($parameter) {
+	/**
+	 * Get properties for input parameters
+	 */
+	public function getParameter($parameter, $default = null) {
 		$parameterName = $this->name . $parameter;
-		return $this->$parameterName;
+
+		if (isset($this->$parameterName)) {
+			return $this->$parameterName;
+		}
+
+		return $default;
 	}
 
 	/**

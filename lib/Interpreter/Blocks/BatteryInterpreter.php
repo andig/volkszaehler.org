@@ -28,6 +28,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Volkszaehler\Model;
 use Volkszaehler\Interpreter\InterpreterInterface;
 
+// http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10&from=2017-08-01
+
 /**
  * Battery interpreter
  *
@@ -43,11 +45,12 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 		$this->entity = $entity;
 		$this->function = $function;
 
-		$this->capacity = 10;
-		$this->efficiency = 100;
 		$this->chargeLevel = 0;
-		$this->chargeMinLevel = 0.5;
-		$this->chargeMaxLevel = $this->capacity;
+
+		$this->capacity = $battery->getParameter('capacity') * 1e3;
+		$this->minChargeLevel = $battery->getParameter('minlevel', 0.1) * $this->capacity;
+		$this->maxChargeLevel = $battery->getParameter('maxlevel', 1.0) * $this->capacity;
+		$this->efficiency = $battery->getParameter('efficiency', 1.0); // 0.95
 	}
 
 	/**
@@ -76,9 +79,21 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 			$netValue = $chargeValue - $dischargeValue;
 			$netCharge = $netValue * $period / 3.6e6;
 
-			if ($netCharge > 0) {
+			if ($netCharge != 0) {
 				$targetCharge = $this->chargeLevel + $netCharge;
-				$effectiveCharge = max($this->chargeMinLevel, min($this->chargeMaxLevel, $targetCharge));
+
+				if ($netCharge > 0) {
+					// charging
+					$effectiveCharge = min($this->maxChargeLevel, $targetCharge);
+				}
+				elseif ($this->chargeLevel > $this->minChargeLevel) {
+					// discharging
+					$effectiveCharge = max($this->minChargeLevel, $targetCharge);
+				}
+				else {
+					// no change
+					$effectiveCharge = $this->chargeLevel;
+				}
 
 				// partial charge/discharge
 				if ($targetCharge != $effectiveCharge) {
@@ -91,6 +106,7 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 
 				$this->chargeLevel = $effectiveCharge;
 			}
+// echo "lief: $chargeValue, bez: $dischargeValue, delta: $netValue/$netCharge, charge: {$this->chargeLevel}".PHP_EOL;
 
 			$value = 0;
 			switch ($this->function) {
