@@ -30,7 +30,7 @@ use Doctrine\ORM\ORMException;
 use Volkszaehler\Model;
 use Volkszaehler\Util;
 use Volkszaehler\Interpreter\Interpreter;
-use Volkszaehler\Interpreter\Blocks\BlockManager;
+use Volkszaehler\Interpreter\Blocks;
 use Volkszaehler\View\View;
 
 /**
@@ -41,7 +41,7 @@ use Volkszaehler\View\View;
  */
 class DataController extends Controller {
 
-	use BlockControllerTrait;
+	use Blocks\BlockControllerTrait;
 
 	const OPT_SKIP_DUPLICATES = 'skipduplicates';
 
@@ -96,8 +96,9 @@ class DataController extends Controller {
 
 		// single UUID
 		if (is_string($uuid)) {
-			if (BlockManager::getInstance()->has($uuid)) {
-				$entity = BlockManager::getInstance()->get($uuid);
+			if (Blocks\BlockManager::getInstance()->has($uuid)) {
+				$interpreter = Blocks\BlockManager::getInstance()->get($uuid);
+				return $interpreter;
 			}
 			elseif (!Util\UUID::validate($uuid)) {
 				// allow retrieving entity by name

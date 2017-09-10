@@ -24,6 +24,7 @@
 namespace Volkszaehler\Interpreter\Blocks;
 
 use Volkszaehler\Model\Entity;
+use Volkszaehler\Interpreter\Interpreter;
 
 /**
  * Block manager
@@ -67,7 +68,7 @@ class BlockManager {
 		return $this->entities[$name];
 	}
 
-	public function add($name, Entity $entity) {
+	public function add($name, /*Interpreter*/ $entity) {
 		if (isset($this->entities[$name])) {
 			throw new \Exception('Block entity ' . $name . ' already defined');
 		}

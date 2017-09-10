@@ -34,7 +34,7 @@ use Doctrine\ORM;
  * @author Steffen Vogel <info@steffenvogel.de>
  * @author Andreas Götz <cpuidle@gmx.de>
  */
-abstract class Interpreter implements \IteratorAggregate {
+abstract class Interpreter implements \IteratorAggregate, InterpreterInterface {
 
 	// output types
 	const ACTUAL_VALUES = 0;

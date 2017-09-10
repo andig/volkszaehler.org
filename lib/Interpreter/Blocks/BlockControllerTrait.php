@@ -21,7 +21,7 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Controller;
+namespace Volkszaehler\Interpreter\Blocks;
 
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManager;
@@ -54,8 +54,7 @@ trait BlockControllerTrait {
 				$type = $name;
 			}
 
-			$class = '\Volkszaehler\Interpreter\Blocks\\' . ucfirst($type);
-
+			$class = __NAMESPACE__ .'\\'. ucfirst($type);
 			if (!class_exists($class)) {
 				throw new \Exception('Block ' . $type . ' doesn\'t exist');
 			}
