@@ -222,8 +222,9 @@ class VirtualTest extends Middleware
 
 		// delete
 		foreach ([$in1, $in2, $out] as $uuid) {
-			$url = '/channel/' . $uuid . '.json?operation=delete';
-			$this->getJson($url);
+			// $url = '/channel/' . $uuid . '.json?operation=delete';
+			// $this->getJson($url);
+			$this->deleteChannel($uuid);
 		}
 	}
 
@@ -285,8 +286,9 @@ class VirtualTest extends Middleware
 
 		// delete
 		foreach ([$in1, $out] as $uuid) {
-			$url = '/channel/' . $uuid . '.json?operation=delete';
-			$this->getJson($url);
+			// $url = '/channel/' . $uuid . '.json?operation=delete';
+			// $this->getJson($url);
+			$this->deleteChannel($uuid);
 		}
 	}
 

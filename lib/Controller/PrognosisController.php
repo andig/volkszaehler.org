@@ -44,7 +44,7 @@ class PrognosisController extends DataController {
 	 * Create and populate an interpreter
 	 */
 	private function populate($uuid, $from, $to, $tuples = null, $groupBy = null) {
-		$entity = EntityController::factory($this->em, $uuid, true); // from cache
+		$entity = $this->ef->get($uuid, true); // from cache
 		$class = $entity->getDefinition()->getInterpreter();
 		$interpreter = new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $this->options);
 
@@ -65,17 +65,8 @@ class PrognosisController extends DataController {
 		$period = $this->getParameters()->get('period');
 		$groupBy = $this->getParameters()->get('group');
 
-		// single UUID
-		if (!Util\UUID::validate($uuid)) {
-			// allow retrieving entity by name
-			try {
-				$entity = $this->getSingleEntityByName($uuid);
-				$uuid = $entity->getUuid();
-			}
-			catch (ORMException $e) {
-				throw new \Exception('Channel \'' . $uuid . '\' does not exist, is not public or its name is not unique.');
-			}
-		}
+		$entity = $this->ef->get($uuid, true);
+		$uuid = $entity->getUuid();
 
 		$partial = 'now';
 		$format = 'd.m.Y';

@@ -136,13 +136,15 @@ class VirtualInterpreter extends Interpreter {
 			$options[$idx] = 'consumptionto';
 		}
 
+		$ef = Util\EntityFactory::getInstance($this->em);
+
 		// assign input channel functions
 		foreach ($uuids as $key => $value) {
 			$this->ctx->def($key, $key, 'string'); // as key constant
 			$this->ctx->def($key, function() use ($key) { return $this->_val($key); }); // as value function
 
 			// get chached entity
-			$entity = Controller\EntityController::factory($this->em, $value, true);
+			$entity = $ef->get($value, true);
 
 			// define named parameters
 			$title = preg_replace('/\s*/', '', $entity->getProperty('title'));
