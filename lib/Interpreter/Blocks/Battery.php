@@ -24,11 +24,12 @@
 namespace Volkszaehler\Interpreter\Blocks;
 
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Doctrine\ORM\EntityManager;
 
 use Volkszaehler\Model;
-use Volkszaehler\Controller\EntityController;
-use Volkszaehler\Interpreter\Virtual\InterpreterCoordinator;
+use Volkszaehler\Util\EntityFactory;
+use Volkszaehler\Interpreter\Virtual\InterpreterCoordinatorTrait;
 
 // http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10
 
@@ -40,44 +41,117 @@ use Volkszaehler\Interpreter\Virtual\InterpreterCoordinator;
  */
 class Battery implements BlockInterface {
 
-	use InterpreterCoordinator;
+	use InterpreterCoordinatorTrait;
 
-	public function __construct(Request $request, EntityManager $em, $name) {
-		$this->em = $em;
-		$this->request = $request;
+	const SENSOR = 'universalsensor';
+	const CONSUMPTION = 'consumptionsensor';
+	// const SENSOR = 'virtualsensor';
+	// const CONSUMPTION = 'virtualconsumption';
+
+	protected $em;
+	protected $ef;
+
+	protected $name;
+	protected $parameters;
+
+	public function __construct($name, ParameterBag $parameters) {
 		$this->name = $name;
+		$this->parameters = $parameters;
 
-		$this->groupBy = $this->request->query->get('group');
+		// required parameters
+		foreach (array('charge', 'discharge', 'capacity') as $param) {
+			if (!$parameters->has($param)) {
+				throw new \Exception('Missing parameter ' . $param . ' for ' . $name);
+			}
+		}
+	}
 
-		$this->setupCoordinator();
+	/**
+	 * Add entities to entity manager
+	 */
+	public function createEntities(BlockManager $blockManager) {
+		$friendlyName = ucfirst($this->name);
 
-		$this->createParameters(array('charge', 'discharge', 'capacity'));
-		$this->createParameters(array('efficiency'), true);
+		// output
+		$group = new DefinableGroup('group', $this->name);
+		$group->setProperty('title', $friendlyName);
 
-		$channel = $this->channelFactory('virtualconsumption', array('unit' => 'W'));
 		foreach (array('charge', 'discharge') as $function) {
-			$this->addInput($function);
-			$this->addOutput($channel, $function);
+			$channel = $this->createChannel(self::CONSUMPTION, $function, array(
+				'unit' => 'W'
+			));
+			$this->createOutputInterpreter($channel, $function);
+
+			$blockManager->add($this->name . $function, $channel);
+			$group->addChild($channel);
 		}
 
-		$channel = $this->channelFactory('virtualsensor', array('unit' => 'Wh'));
-		$this->addOutput($channel, 'level');
+		$function = 'level';
+		$channel = $this->createChannel(self::SENSOR, $function, array(
+			'unit' => 'Wh'
+		));
+		$this->createOutputInterpreter($channel, $function);
+
+		$blockManager->add($this->name . $function, $channel);
+		$group->addChild($channel);
+
+		$blockManager->add($this->name, $group);
+	}
+
+	/**
+	 * Create input and output interpreters
+	 * Requires access to the request
+	 */
+	public function createInterpreters(EntityManager $em, ParameterBag $parameters) {
+		if (isset($this->em)) {
+			return;
+		}
+
+		$this->parameters->add($parameters->all());
+		$this->em = $em;
+		$this->ef = EntityFactory::getInstance($em);
+
+		// InterpreterCoordinatorTrait hack
+		$this->groupBy = $this->parameters->get('group');
+
+		// input
+		foreach (array('charge', 'discharge') as $function) {
+			$channel = $this->createChannel(self::CONSUMPTION, $function, array(
+				'unit' => 'W'
+			));
+
+			$this->addInput($function);
+		}
+	}
+
+	/**
+	 * Create channel dynamically
+	 */
+	protected function createChannel($type, $function, $properties = array()) {
+		$shortName = $this->name . $function;
+		$channel = new DefinableEntity($type, $shortName, $this);
+		$channel->setProperty('title', ucwords($this->name .' '. $function));
+
+		foreach ($properties as $key => $value) {
+			$channel->setProperty($key, $value);
+		}
+
+		return $channel;
 	}
 
 	/**
 	 * Create input interpreter
 	 */
 	protected function addInput($key) {
-		$from = $this->request->query->get('from');
-		$to = $this->request->query->get('to');
-		$tuples = $this->request->query->get('tuples');
-		$groupBy = $this->request->query->get('group');
-		$options = $this->request->query->get('options');
-		$options = array();
+		$from = $this->parameters->get('from');
+		$to = $this->parameters->get('to');
+		$tuples = $this->parameters->get('tuples');
+		$groupBy = $this->parameters->get('group');
+		$options = (array) $this->parameters->get('options');
 
 		$channel = $this->getParameter($key);
 
-		$entity = EntityController::factory($this->em, $channel, true);
+		$entity = $this->ef->get($channel, true);
 		$class = $entity->getDefinition()->getInterpreter();
 		$interpreter = new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $options);
 
@@ -88,53 +162,19 @@ class Battery implements BlockInterface {
 	/**
 	 * Create output interpreter
 	 */
-	protected function addOutput($channel, $function) {
+	protected function createOutputInterpreter($channel, $function) {
 		$interpreter = new BatteryInterpreter($this, $channel, $function);
-		BlockManager::getInstance()->add($this->name . $function, $interpreter);
-	}
-
-	/**
-	 * Create properties from request parameters
-	 */
-	protected function createParameters($parameters, $optional = false) {
-		foreach ($parameters as $parameter) {
-			$parameterName = $this->name . $parameter;
-
-			if (!$this->request->query->has($parameterName)) {
-				if ($optional) {
-					continue;
-				}
-				throw new \Exception('Missing parameter ' . $parameterName . ' for battery');
-			}
-
-			$this->$parameterName = $this->request->query->get($parameterName);
-		}
+		$channel->setInterpreter($interpreter);
 	}
 
 	/**
 	 * Get properties for input parameters
 	 */
 	public function getParameter($parameter, $default = null) {
-		$parameterName = $this->name . $parameter;
-
-		if (isset($this->$parameterName)) {
-			return $this->$parameterName;
+		if ($this->parameters->has($parameter)) {
+			return $this->parameters->get($parameter);
 		}
-
 		return $default;
-	}
-
-	/**
-	 * Create channel dynamically
-	 */
-	protected function channelFactory($type, $properties = array()) {
-		$channel = new Model\Channel($type);
-
-		foreach ($properties as $key => $value) {
-			$channel->setProperty($key, $value);
-		}
-
-		return $channel;
 	}
 }
 

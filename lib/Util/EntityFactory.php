@@ -26,8 +26,14 @@ namespace Volkszaehler\Util;
 use Doctrine\ORM;
 use Doctrine\Common\Cache;
 
+use Symfony\Component\HttpFoundation\ParameterBag;
+
 use Volkszaehler\Util;
+use Volkszaehler\Model;
+use Volkszaehler\Controller\Controller;
 use Volkszaehler\Definition\PropertyDefinition;
+use Volkszaehler\Interpreter\Blocks\DefinableEntity;
+use Volkszaehler\Interpreter\Blocks\BlockManager;
 
 /**
  * Entity factory
@@ -88,6 +94,7 @@ class EntityFactory {
 
 	/**
 	 * Return a single entity by identifier, either UUID or name
+	 *
 	 * @param $uuid
 	 * @param bool $cache Use cache
 	 * @throws Exception on empty result
@@ -97,7 +104,10 @@ class EntityFactory {
 		if (empty($uuid)) {
 			throw new \Exception('Missing UUID');
 		}
-		if (UUID::validate($uuid)) {
+		if (BlockManager::getInstance()->has($uuid)) {
+			return BlockManager::getInstance()->get($uuid);
+		}
+		if (Util\UUID::validate($uuid)) {
 			return $this->getByUuidUnvalidated($uuid, $cache);
 		}
 		return $this->getByName($uuid, $cache);
@@ -234,6 +244,28 @@ class EntityFactory {
 		}
 
 		return $entity;
+	}
+
+	public function createInterpreter(Model\Channel $entity, ParameterBag $parameters) {
+		// block entity
+		if ($entity instanceOf DefinableEntity) {
+			// ensure block is fully initialized
+			$block = $entity->getBlock();
+			$block->createInterpreters($this->em, $parameters);
+
+			$interpreter = $entity->getInterpreter();
+			return $interpreter;
+		}
+
+		// persistent entity
+		$from = $parameters->get('from');
+		$to = $parameters->get('to');
+		$tuples = $parameters->get('tuples');
+		$groupBy = $parameters->get('group');
+		$options = Controller::makeArray(strtolower($parameters->get('options')));
+
+		$class = $entity->getDefinition()->getInterpreter();
+		return new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $options);
 	}
 }
 

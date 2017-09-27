@@ -26,6 +26,7 @@ namespace Volkszaehler\Interpreter\Blocks;
 use Symfony\Component\HttpFoundation\Request;
 
 use Volkszaehler\Model;
+use Volkszaehler\Interpreter\Interpreter;
 use Volkszaehler\Interpreter\InterpreterInterface;
 
 // http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10&from=2017-08-01
@@ -36,20 +37,25 @@ use Volkszaehler\Interpreter\InterpreterInterface;
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
  */
-class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
+// class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
+class BatteryInterpreter extends Interpreter {
 
 	protected $battery;
 
-	public function __construct(Battery $battery, Model\Entity $entity, $function) {
+	public function __construct(Battery $battery, Model\Entity $channel, $function) {
 		$this->battery = $battery;
-		$this->entity = $entity;
+		$this->channel = $channel;
 		$this->function = $function;
 
 		$this->chargeLevel = 0;
 
 		$this->capacity = $battery->getParameter('capacity') * 1e3;
-		$this->minChargeLevel = $battery->getParameter('minlevel', 0.1) * $this->capacity;
+		$this->minChargeLevel = $battery->getParameter('minlevel', 0.0) * $this->capacity;
 		$this->maxChargeLevel = $battery->getParameter('maxlevel', 1.0) * $this->capacity;
+
+		$this->maxCharge = $battery->getParameter('maxcharge');
+		$this->maxDischarge = $battery->getParameter('maxdischarge');
+
 		$this->efficiency = $battery->getParameter('efficiency', 1.0); // 0.95
 	}
 
@@ -65,7 +71,7 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 		$charge = $this->battery->getCoordinatedInterpreter('charge');
 		$discharge = $this->battery->getCoordinatedInterpreter('discharge');
 
-		foreach ($this->battery->getTimestampCoordinator() as $ts) {
+		foreach ($this->battery->getTimestampGenerator() as $ts) {
 			if (!isset($ts_last)) {
 				$this->from = $this->battery->getCoordinatedFrom();
 				$ts_last = $this->from;
@@ -75,6 +81,13 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 
 			$chargeValue = $charge->getValueForTimestamp($ts);
 			$dischargeValue = $discharge->getValueForTimestamp($ts);
+
+			if (isset($this->maxCharge)) {
+				$chargeValue = min($chargeValue, $this->maxCharge);
+			}
+			if (isset($this->maxDischarge)) {
+				$dischargeValue = min($dischargeValue, $this->maxDischarge);
+			}
 
 			$netValue = $chargeValue - $dischargeValue;
 			$netCharge = $netValue * $period / 3.6e6;
@@ -106,7 +119,6 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 
 				$this->chargeLevel = $effectiveCharge;
 			}
-// echo "lief: $chargeValue, bez: $dischargeValue, delta: $netValue/$netCharge, charge: {$this->chargeLevel}".PHP_EOL;
 
 			$value = 0;
 			switch ($this->function) {
@@ -145,7 +157,7 @@ class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 	 */
 
 	public function getEntity() {
-		return $this->entity;
+		return $this->channel;
 	}
 
 	public function convertRawTuple($row) {

@@ -107,7 +107,7 @@ class EntityTest extends Middleware
 		$this->assertStringStartsWith('Invalid UUID', $this->json->exception->message);
 
 		// non-existing uuid
-		$uuid = Util\UUID::mint();
+		$uuid = (string) Util\UUID::mint();
 		$this->getJson('/entity/' . $uuid . '.json', array(), 'GET', true);
 		$this->assertStringStartsWith('No entity with UUID', $this->json->exception->message);
 	}
@@ -126,7 +126,7 @@ class EntityTest extends Middleware
 		$this->assertStringStartsWith('Invalid UUID', $this->json->exception->message);
 
 		// non-existing uuid
-		$uuid = Util\UUID::mint();
+		$uuid = (string) Util\UUID::mint();
 		$this->getJson('/entity/' . $uuid . '.json', array(
 			'operation' => 'edit'
 		), 'GET', true);

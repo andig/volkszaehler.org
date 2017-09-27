@@ -15,7 +15,7 @@ class IotTest extends Middleware
 	protected $uuid;
 
 	function testRetrievel() {
-		$secret = str_replace('-', '', Util\UUID::mint());
+		$secret = str_replace('-', '', (string) Util\UUID::mint());
 		$this->getJson('/channel.json', array(
 			'operation' => 'add',
 			'title' => 'Power',

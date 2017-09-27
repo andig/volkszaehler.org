@@ -23,58 +23,126 @@
 
 namespace Volkszaehler\Interpreter\Blocks;
 
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\ParameterBag;
+
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\ORMException;
+
 use Volkszaehler\Model\Entity;
+use Volkszaehler\Util;
 use Volkszaehler\Interpreter\Interpreter;
+use Volkszaehler\View\View;
 
 /**
- * Block manager
+ * Block controller
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
  */
 class BlockManager {
 
-	protected $entities;
-
 	private static $instance;
 
+	protected $entities;
+
+	/**
+	 * Get singleton instance
+	 */
 	public static function getInstance() {
 		if (!isset(self::$instance)) {
-			self::$instance = new BlockManager();
+			self::$instance = new self();
 		}
 
 		return self::$instance;
 	}
 
+	/**
+	 * Constructor
+	 */
 	protected function __construct() {
 		$this->entities = array();
+		$this->loadBlockDefinitions();
 	}
 
-	private function __clone() {
+	/**
+	 * Load block definitions
+	 */
+	protected function loadBlockDefinitions() {
+		if (!file_exists($file = VZ_DIR . '/etc/blocks.json')) {
+			return;
+		}
+
+		$json = Util\JSON::decode(file_get_contents($file), true);
+
+		foreach ($json as $name => $definition) {
+			$type = $definition['type'] ?? $name;
+
+			$class = __NAMESPACE__ .'\\'. ucfirst($type);
+			if (!class_exists($class)) {
+				throw new \Exception('Invalid block definition ' . $type);
+			}
+
+			$block = new $class($name, new ParameterBag($definition));
+			$block->createEntities($this);
+		}
 	}
 
-	private function __wakeup() {
+	/*
+	 * Entities
+	 */
+
+	public function add($name, Entity $entity) {
+		if (isset($this->entities[$name])) {
+			throw new \Exception('Block ' . $name . ' already defined');
+		}
+		$this->entities[$name] = $entity;
 	}
 
 	public function has($name) {
+		// uuid
+		if (Util\UUID::validate($name)) {
+			return in_array($name, array_map(function($entity) {
+				return $entity->getUuid();
+			}, $this->entities));
+		}
+
+		// name
 		return isset($this->entities[$name]);
 	}
 
 	public function get($name) {
-		if (!$this->has($name)) {
-			throw new \Exception('Block entity ' . $name . ' doesn\'t exist');
+		// uuid
+		if (Util\UUID::validate($name)) {
+			$entity = array_reduce($this->entities, function($carry, $entity) use ($name) {
+				if ($entity->getUuid() == $name) {
+					return $entity;
+				}
+				return $carry;
+			});
+
+			if (empty($entity)) {
+				throw new \Exception('Block interpreter ' . $name . ' doesn\'t exist');
+			}
+
+			return $entity;
 		}
 
-		return $this->entities[$name];
-	}
-
-	public function add($name, /*Interpreter*/ $entity) {
+		// name
 		if (isset($this->entities[$name])) {
-			throw new \Exception('Block entity ' . $name . ' already defined');
+			return $this->entities[$name];
 		}
 
-		$this->entities[$name] = $entity;
+		throw new \Exception('Block interpreter ' . $name . ' doesn\'t exist');
 	}
+
+	/*
+	 * Singleton
+	 */
+
+	private function __clone() { }
+
+	private function __wakeup() { }
 }
 
 ?>

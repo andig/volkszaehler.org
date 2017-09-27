@@ -38,7 +38,8 @@ use Volkszaehler\Interpreter\Interpreter;
  */
 interface BlockInterface {
 
-	public function __construct(Request $request, EntityManager $em, $name);
+	public function createEntities(BlockManager $entityManager);
+	public function getParameter($parameter, $default = null);
 
 }
 

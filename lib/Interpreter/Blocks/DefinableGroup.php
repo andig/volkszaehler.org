@@ -23,46 +23,26 @@
 
 namespace Volkszaehler\Interpreter\Blocks;
 
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\ORMException;
-
-use Volkszaehler\Model;
-use Volkszaehler\Util;
-use Volkszaehler\Interpreter\Interpreter;
-use Volkszaehler\View\View;
+use Volkszaehler\Util\UUID;
+use Volkszaehler\Model\Aggregator;
 
 /**
- * Block controller
+ * Pre-defined, non-persistent entity type
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
  */
-trait BlockControllerTrait {
+class DefinableGroup extends Aggregator {
 
-	public static $blockAccessor;
-
-	public function setupBlocks() {
-		if (!is_array(self::$blockAccessor)) {
-			self::$blockAccessor = array();
-		}
-
-		$definitions = self::makeArray($this->request->get('define'));
-		foreach ($definitions as $definition) {
-			list ($name, $type) = explode(',', $definition . ',');
-			if (!$type) {
-				$type = $name;
-			}
-
-			$class = __NAMESPACE__ .'\\'. ucfirst($type);
-			if (!class_exists($class)) {
-				throw new \Exception('Block ' . $type . ' doesn\'t exist');
-			}
-
-			$block = new $class($this->request, $this->em, $name);
-		}
+	/**
+	 * Constructor
+	 *
+	 * @param string $type
+	 */
+	public function __construct($type, $shortName) {
+		parent::__construct($type);
+		$this->uuid = (string) UUID::mint(UUID::MD5, $shortName, UUID::nsOID);
 	}
-
 }
 
 ?>

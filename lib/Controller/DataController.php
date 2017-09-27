@@ -41,8 +41,6 @@ use Volkszaehler\View\View;
  */
 class DataController extends Controller {
 
-	use Blocks\BlockControllerTrait;
-
 	const OPT_SKIP_DUPLICATES = 'skipduplicates';
 
 	protected $options;	// optional request parameters
@@ -50,9 +48,6 @@ class DataController extends Controller {
 	public function __construct(Request $request, EntityManager $em, View $view) {
 		parent::__construct($request, $em, $view);
 		$this->options = self::makeArray(strtolower($this->getParameters()->get('options')));
-
-		// any blocks defined?
-		$this->setupBlocks();
 	}
 
 	/**
@@ -64,19 +59,8 @@ class DataController extends Controller {
 	public function get($uuid) {
 		// single UUID
 		if (is_string($uuid)) {
-			// if (Blocks\BlockManager::getInstance()->has($uuid)) {
-			// 	$interpreter = Blocks\BlockManager::getInstance()->get($uuid);
-			// 	return $interpreter;
-			// }
-
-			$from = $this->getParameters()->get('from');
-			$to = $this->getParameters()->get('to');
-			$tuples = $this->getParameters()->get('tuples');
-			$groupBy = $this->getParameters()->get('group');
-
 			$entity = $this->ef->get($uuid, true);
-			$class = $entity->getDefinition()->getInterpreter();
-			return new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $this->options);
+			return $this->ef->createInterpreter($entity, $this->getParameters());
 		}
 
 		// multiple UUIDs
