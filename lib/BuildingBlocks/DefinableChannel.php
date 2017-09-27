@@ -36,7 +36,7 @@ use Volkszaehler\Interpreter\Interpreter;
 class DefinableChannel extends Channel {
 
 	/**
-	 * @var Volkszaehler\Interpreter\Blocks\BlockInterface
+	 * @var Volkszaehler\BuildingBlocks\BlockInterface
 	 */
 	protected $block;
 

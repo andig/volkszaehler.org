@@ -26,15 +26,13 @@ namespace Volkszaehler\BuildingBlocks\Battery;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Doctrine\ORM\EntityManager;
 
-use Volkszaehler\Model;
+use Volkszaehler\Model\Entity;
 use Volkszaehler\Util\EntityFactory;
 use Volkszaehler\Interpreter\Virtual\InterpreterCoordinatorTrait;
 use Volkszaehler\BuildingBlocks\DefinableGroup;
 use Volkszaehler\BuildingBlocks\DefinableChannel;
 use Volkszaehler\BuildingBlocks\BlockInterface;
 use Volkszaehler\BuildingBlocks\BlockManager;
-
-// http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10
 
 /**
  * Battery building block
@@ -78,7 +76,7 @@ class Battery implements BlockInterface {
 		$group = new DefinableGroup('group', $this->name);
 		$group->setProperty('title', $friendlyName);
 
-		foreach (array('charge', 'discharge') as $function) {
+		foreach (array('charge', 'discharge', 'not used', 'not delivered') as $function) {
 			$channel = $this->createChannel(self::CONSUMPTION, $function, array(
 				'unit' => 'W'
 			));
@@ -131,10 +129,21 @@ class Battery implements BlockInterface {
 	protected function createChannel($type, $function, $properties = array()) {
 		$shortName = $this->name . $function;
 		$channel = new DefinableChannel($type, $shortName, $this);
-		$channel->setProperty('title', ucwords($this->name .' '. $function));
+		$channel->setProperty('title', ucwords($function));
 
+		// required properties
 		foreach ($properties as $key => $value) {
 			$channel->setProperty($key, $value);
+		}
+
+		// user-defined properties
+		if ($this->parameters->has('properties')) {
+			$properties = $this->parameters->get('properties');
+			if (isset($properties[$function])) {
+				foreach ($properties[$function] as $key => $value) {
+					$channel->setProperty($key, $value);
+				}
+			}
 		}
 
 		return $channel;

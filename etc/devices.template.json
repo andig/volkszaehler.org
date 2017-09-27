@@ -1,0 +1,47 @@
+/**
+ * Battery template
+ *
+ * @copyright Copyright (c) 2017, The volkszaehler.org project
+ * @author Andreas Goetz <cpuidle@gmx.de>
+ */
+{
+	"battery": {
+		/*
+		 * Battery parameters
+		 */
+		"type": "battery",
+		"capacity": 10000,
+		"minlevel": 0.1,
+		"maxlevel": 1.0,
+		"efficiency": 0.9,
+		// "maxcharge": 1000,
+		// "maxdischarge": 1000,
+
+		/*
+		 * Input UUIDs
+		 */
+		"charge": "lieferung",
+		"discharge": "bezug",
+
+		/*
+		 * Additional channel properties
+		 */
+		"properties": {
+			"charge": {
+				"title": "Laden"
+			},
+			"discharge": {
+				"title": "Entladen"
+			},
+			"not used": {
+				"title": "Restlieferung"
+			},
+			"not delivered": {
+				"title": "Restbezug"
+			},
+			"level": {
+				"title": "Ladestand"
+			}
+		}
+	}
+}

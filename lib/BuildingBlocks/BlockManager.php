@@ -23,16 +23,10 @@
 
 namespace Volkszaehler\BuildingBlocks;
 
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\ParameterBag;
-
-use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\ORMException;
 
 use Volkszaehler\Model\Entity;
 use Volkszaehler\Util;
-use Volkszaehler\Interpreter\Interpreter;
-use Volkszaehler\View\View;
 
 /**
  * Block controller
@@ -69,7 +63,7 @@ class BlockManager {
 	 * Load block definitions
 	 */
 	protected function loadBlockDefinitions() {
-		if (!file_exists($file = VZ_DIR . '/etc/blocks.json')) {
+		if (!file_exists($file = VZ_DIR . '/etc/devices.json')) {
 			return;
 		}
 
@@ -141,8 +135,6 @@ class BlockManager {
 	 */
 
 	private function __clone() { }
-
-	private function __wakeup() { }
 }
 
 ?>

@@ -37,6 +37,7 @@ use Volkszaehler\Interpreter\Interpreter;
 class BatteryInterpreter extends Interpreter {
 
 	protected $battery;
+	protected $consumption;
 
 	public function __construct(Battery $battery, Model\Entity $channel, $function) {
 		$this->battery = $battery;
@@ -94,8 +95,11 @@ class BatteryInterpreter extends Interpreter {
 			$effectiveChargePower = $this->efficiency * $chargePower;
 			$chargeDelta = ($effectiveChargePower - $dischargePower / $this->efficiency) * $period / 3.6e6;
 
+			// no discharge below current level if already below min
+			$minLevel = min($this->chargeLevel, $this->minChargeLevel);
+
 			// charge delta limited by min/max levels
-			$resultingChargeLevel = max($this->minChargeLevel, min($this->maxChargeLevel, $this->chargeLevel + $chargeDelta));
+			$resultingChargeLevel = max($minLevel, min($this->maxChargeLevel, $this->chargeLevel + $chargeDelta));
 
  			$actualChargeDelta = $resultingChargeLevel - $this->chargeLevel;
 			$this->chargeLevel = $resultingChargeLevel;
@@ -103,6 +107,14 @@ class BatteryInterpreter extends Interpreter {
 			// output value for interpreter function
 			$value = 0;
 			switch ($this->function) {
+				case 'not used':
+						$delta = $actualChargeDelta / $chargeDelta;
+						$value = $charge->getValueForTimestamp($ts) - $delta * $chargePower;
+					break;
+				case 'not delivered':
+						$delta = $actualChargeDelta / $chargeDelta;
+						$value = $discharge->getValueForTimestamp($ts) - $delta * $dischargePower;
+					break;
 				case 'charge':
 					if ($actualChargeDelta > 0) {
 						$value = $netPower;
@@ -121,6 +133,8 @@ class BatteryInterpreter extends Interpreter {
 			$tuple = array($ts, $value, 1);
 			$ts_last = $ts;
 
+			$this->consumption += $value * $period;
+
 			$this->updateMinMax($tuple);
 			$this->rowCount++;
 
@@ -134,16 +148,14 @@ class BatteryInterpreter extends Interpreter {
 	 * InterpreterInterface
 	 */
 
+	public function convertRawTuple($row) { }
+
 	public function getEntity() {
 		return $this->channel;
 	}
 
-	public function convertRawTuple($row) {
-
-	}
-
 	public function getRowCount() {
-		$this->rowCount;
+		return $this->rowCount;
 	}
 
 	public function getFrom() {
@@ -154,20 +166,13 @@ class BatteryInterpreter extends Interpreter {
 		return $this->to;
 	}
 
-	public function getMin() {
-
-	}
-
-	public function getMax() {
-
-	}
-
 	public function getConsumption() {
-
+		return ($this->function !== 'level') ? $this->consumption / 3.6e6 : NULL;
 	}
 
 	public function getAverage() {
-
+		$delta = $this->getTo() - $this->getFrom();
+		return $this->consumption / $delta;
 	}
 }
 
