@@ -30,10 +30,9 @@ use Symfony\Component\HttpFoundation\ParameterBag;
 
 use Volkszaehler\Util;
 use Volkszaehler\Model;
-use Volkszaehler\Controller\Controller;
 use Volkszaehler\Definition\PropertyDefinition;
-use Volkszaehler\Interpreter\Blocks\DefinableEntity;
-use Volkszaehler\Interpreter\Blocks\BlockManager;
+use Volkszaehler\BuildingBlocks\DefinableChannel;
+use Volkszaehler\BuildingBlocks\BlockManager;
 
 /**
  * Entity factory
@@ -248,7 +247,7 @@ class EntityFactory {
 
 	public function createInterpreter(Model\Channel $entity, ParameterBag $parameters) {
 		// block entity
-		if ($entity instanceOf DefinableEntity) {
+		if ($entity instanceOf DefinableChannel) {
 			// ensure block is fully initialized
 			$block = $entity->getBlock();
 			$block->createInterpreters($this->em, $parameters);
@@ -262,7 +261,7 @@ class EntityFactory {
 		$to = $parameters->get('to');
 		$tuples = $parameters->get('tuples');
 		$groupBy = $parameters->get('group');
-		$options = Controller::makeArray(strtolower($parameters->get('options')));
+		$options = (array) strtolower($parameters->get('options'));
 
 		$class = $entity->getDefinition()->getInterpreter();
 		return new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $options);

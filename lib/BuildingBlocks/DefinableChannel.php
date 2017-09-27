@@ -21,9 +21,7 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Interpreter\Blocks;
-
-use Symfony\Component\HttpFoundation\ParameterBag;
+namespace Volkszaehler\BuildingBlocks;
 
 use Volkszaehler\Util\UUID;
 use Volkszaehler\Model\Channel;
@@ -35,7 +33,7 @@ use Volkszaehler\Interpreter\Interpreter;
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
  */
-class DefinableEntity extends Channel {
+class DefinableChannel extends Channel {
 
 	/**
 	 * @var Volkszaehler\Interpreter\Blocks\BlockInterface
@@ -82,11 +80,6 @@ class DefinableEntity extends Channel {
 
 		return $this->interpreter;
 	}
-
-	// public function getId() { return $this->id; }		// read only
-	// public function getUuid() { return $this->uuid; }	// read only
-	// public function getType() { return $this->type; }	// read only
-	// public function getDefinition() { return Definition\EntityDefinition::get($this->type); }
 }
 
 ?>

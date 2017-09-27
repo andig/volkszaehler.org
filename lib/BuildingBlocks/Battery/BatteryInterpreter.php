@@ -21,13 +21,10 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Interpreter\Blocks;
-
-use Symfony\Component\HttpFoundation\Request;
+namespace Volkszaehler\BuildingBlocks\Battery;
 
 use Volkszaehler\Model;
 use Volkszaehler\Interpreter\Interpreter;
-use Volkszaehler\Interpreter\InterpreterInterface;
 
 // http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10&from=2017-08-01
 
@@ -37,7 +34,6 @@ use Volkszaehler\Interpreter\InterpreterInterface;
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
  */
-// class BatteryInterpreter implements \IteratorAggregate, InterpreterInterface {
 class BatteryInterpreter extends Interpreter {
 
 	protected $battery;

@@ -21,7 +21,7 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Interpreter\Blocks;
+namespace Volkszaehler\BuildingBlocks;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -78,7 +78,7 @@ class BlockManager {
 		foreach ($json as $name => $definition) {
 			$type = $definition['type'] ?? $name;
 
-			$class = __NAMESPACE__ .'\\'. ucfirst($type);
+			$class = __NAMESPACE__ .'\\'. ucfirst($type) .'\\'. ucfirst($type);
 			if (!class_exists($class)) {
 				throw new \Exception('Invalid block definition ' . $type);
 			}

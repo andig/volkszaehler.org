@@ -21,20 +21,23 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Interpreter\Blocks;
+namespace Volkszaehler\BuildingBlocks\Battery;
 
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Doctrine\ORM\EntityManager;
 
 use Volkszaehler\Model;
 use Volkszaehler\Util\EntityFactory;
 use Volkszaehler\Interpreter\Virtual\InterpreterCoordinatorTrait;
+use Volkszaehler\BuildingBlocks\DefinableGroup;
+use Volkszaehler\BuildingBlocks\DefinableChannel;
+use Volkszaehler\BuildingBlocks\BlockInterface;
+use Volkszaehler\BuildingBlocks\BlockManager;
 
 // http://localhost/vz/htdocs/middleware.php/data/batterycharge.json?debug=1&define=battery&batterycharge=82fb2540-60df-11e2-8a9f-0b9d1e30ccc6&batterydischarge=2a93a9a0-60df-11e2-83cc-2b8029d72006&batterycapacity=10
 
 /**
- * Battery block
+ * Battery building block
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
@@ -45,8 +48,6 @@ class Battery implements BlockInterface {
 
 	const SENSOR = 'universalsensor';
 	const CONSUMPTION = 'consumptionsensor';
-	// const SENSOR = 'virtualsensor';
-	// const CONSUMPTION = 'virtualconsumption';
 
 	protected $em;
 	protected $ef;
@@ -67,7 +68,8 @@ class Battery implements BlockInterface {
 	}
 
 	/**
-	 * Add entities to entity manager
+	 * Create entities associated with block type
+	 * and add entities to block manager for retrieval
 	 */
 	public function createEntities(BlockManager $blockManager) {
 		$friendlyName = ucfirst($this->name);
@@ -99,8 +101,7 @@ class Battery implements BlockInterface {
 	}
 
 	/**
-	 * Create input and output interpreters
-	 * Requires access to the request
+	 * Create input and output interpreters for data retrieval
 	 */
 	public function createInterpreters(EntityManager $em, ParameterBag $parameters) {
 		if (isset($this->em)) {
@@ -114,7 +115,7 @@ class Battery implements BlockInterface {
 		// InterpreterCoordinatorTrait hack
 		$this->groupBy = $this->parameters->get('group');
 
-		// input
+		// input channels
 		foreach (array('charge', 'discharge') as $function) {
 			$channel = $this->createChannel(self::CONSUMPTION, $function, array(
 				'unit' => 'W'
@@ -129,7 +130,7 @@ class Battery implements BlockInterface {
 	 */
 	protected function createChannel($type, $function, $properties = array()) {
 		$shortName = $this->name . $function;
-		$channel = new DefinableEntity($type, $shortName, $this);
+		$channel = new DefinableChannel($type, $shortName, $this);
 		$channel->setProperty('title', ucwords($this->name .' '. $function));
 
 		foreach ($properties as $key => $value) {
@@ -168,7 +169,7 @@ class Battery implements BlockInterface {
 	}
 
 	/**
-	 * Get properties for input parameters
+	 * Get block parameters
 	 */
 	public function getParameter($parameter, $default = null) {
 		if ($this->parameters->has($parameter)) {

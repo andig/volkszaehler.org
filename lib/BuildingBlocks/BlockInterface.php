@@ -21,14 +21,11 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Interpreter\Blocks;
+namespace Volkszaehler\BuildingBlocks;
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\ParameterBag;
+
 use Doctrine\ORM\EntityManager;
-
-use Volkszaehler\Model;
-use Volkszaehler\Util;
-use Volkszaehler\Interpreter\Interpreter;
 
 /**
  * Block interface
@@ -38,9 +35,21 @@ use Volkszaehler\Interpreter\Interpreter;
  */
 interface BlockInterface {
 
-	public function createEntities(BlockManager $entityManager);
-	public function getParameter($parameter, $default = null);
+	/**
+	 * Create entities associated with block type
+	 * and add entities to block manager for retrieval
+	 */
+	public function createEntities(BlockManager $blockManager);
 
+	/**
+	 * Create input and output interpreters for data retrieval
+	 */
+	public function createInterpreters(EntityManager $em, ParameterBag $parameters);
+
+	/**
+	 * Get block parameters
+	 */
+	public function getParameter($parameter, $default = null);
 }
 
 ?>

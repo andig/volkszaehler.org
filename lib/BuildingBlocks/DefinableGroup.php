@@ -21,7 +21,7 @@
  * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Volkszaehler\Interpreter\Blocks;
+namespace Volkszaehler\BuildingBlocks;
 
 use Volkszaehler\Util\UUID;
 use Volkszaehler\Model\Aggregator;
