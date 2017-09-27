@@ -47,7 +47,7 @@ class DataController extends Controller {
 
 	public function __construct(Request $request, EntityManager $em, View $view) {
 		parent::__construct($request, $em, $view);
-		$this->options = self::makeArray(strtolower($this->getParameters()->get('options')));
+		$this->options = (array) strtolower($this->getParameters()->get('options'));
 	}
 
 	/**
@@ -66,7 +66,7 @@ class DataController extends Controller {
 		// multiple UUIDs
 		return array_map(function($uuid) {
 			return $this->get($uuid);
-		}, self::makeArray($uuid));
+		}, (array) $uuid);
 	}
 
 	/**
@@ -165,7 +165,7 @@ class DataController extends Controller {
 
 		$rows = 0;
 
-		foreach (self::makeArray($uuids) as $uuid) {
+		foreach ((array) $uuids as $uuid) {
 			$channel = $this->ef->get($uuid, true);
 			$rows += $channel->clearData($this->em->getConnection(), $from, $to);
 		}
