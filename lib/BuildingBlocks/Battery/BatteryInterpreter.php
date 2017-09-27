@@ -45,7 +45,7 @@ class BatteryInterpreter extends Interpreter {
 
 		$this->chargeLevel = 0;
 
-		$this->capacity = $battery->getParameter('capacity') * 1e3;
+		$this->capacity = $battery->getParameter('capacity');
 		$this->minChargeLevel = $battery->getParameter('minlevel', 0.0) * $this->capacity;
 		$this->maxChargeLevel = $battery->getParameter('maxlevel', 1.0) * $this->capacity;
 
@@ -64,6 +64,7 @@ class BatteryInterpreter extends Interpreter {
 		$this->rowCount = 0;
 		$ts_last = null;
 
+		// input channels
 		$charge = $this->battery->getCoordinatedInterpreter('charge');
 		$discharge = $this->battery->getCoordinatedInterpreter('discharge');
 
@@ -75,61 +76,42 @@ class BatteryInterpreter extends Interpreter {
 
 			$period = $ts - $ts_last;
 
-			$chargeValue = $charge->getValueForTimestamp($ts);
-			$dischargeValue = $discharge->getValueForTimestamp($ts);
+			// available charge/ discharge power
+			$chargePower = $charge->getValueForTimestamp($ts);
+			$dischargePower = $discharge->getValueForTimestamp($ts);
 
+			// limit charge/ discharge power
 			if (isset($this->maxCharge)) {
-				$chargeValue = min($chargeValue, $this->maxCharge);
+				$chargePower = min($chargePower, $this->maxCharge);
 			}
 			if (isset($this->maxDischarge)) {
-				$dischargeValue = min($dischargeValue, $this->maxDischarge);
+				$dischargePower = min($dischargePower, $this->maxDischarge);
 			}
 
-			$netValue = $chargeValue - $dischargeValue;
-			$netCharge = $netValue * $period / 3.6e6;
+			$netPower = $chargePower - $dischargePower;
 
-			if ($netCharge != 0) {
-				$targetCharge = $this->chargeLevel + $netCharge;
+			// efficiency (symmetric losses)
+			$effectiveChargePower = $this->efficiency * $chargePower;
+			$chargeDelta = ($effectiveChargePower - $dischargePower / $this->efficiency) * $period / 3.6e6;
 
-				if ($netCharge > 0) {
-					// charging
-					$effectiveCharge = min($this->maxChargeLevel, $targetCharge);
-				}
-				elseif ($this->chargeLevel > $this->minChargeLevel) {
-					// discharging
-					$effectiveCharge = max($this->minChargeLevel, $targetCharge);
-				}
-				else {
-					// no change
-					$effectiveCharge = $this->chargeLevel;
-				}
+			// charge delta limited by min/max levels
+			$resultingChargeLevel = max($this->minChargeLevel, min($this->maxChargeLevel, $this->chargeLevel + $chargeDelta));
 
-				// partial charge/discharge
-				if ($targetCharge != $effectiveCharge) {
-					$deltaCharge = $effectiveCharge - $this->chargeLevel;
-					$deltaPercent = $deltaCharge / $netCharge;
+ 			$actualChargeDelta = $resultingChargeLevel - $this->chargeLevel;
+			$this->chargeLevel = $resultingChargeLevel;
 
-					$netCharge *= $deltaPercent;
-					$netValue *= $deltaPercent;
-				}
-
-				$this->chargeLevel = $effectiveCharge;
-			}
-
+			// output value for interpreter function
 			$value = 0;
 			switch ($this->function) {
 				case 'charge':
-					if ($netCharge > 0) {
-						$value = $netValue;
+					if ($actualChargeDelta > 0) {
+						$value = $netPower;
 					}
 					break;
 				case 'discharge':
-					if ($netCharge < 0) {
-						$value = -$netValue;
+					if ($actualChargeDelta < 0) {
+						$value = -$netPower;
 					}
-					break;
-				case 'net':
-					$value = $netValue;
 					break;
 				case 'level':
 					$value = $this->chargeLevel;
@@ -139,7 +121,7 @@ class BatteryInterpreter extends Interpreter {
 			$tuple = array($ts, $value, 1);
 			$ts_last = $ts;
 
-			// $this->updateMinMax($tuple);
+			$this->updateMinMax($tuple);
 			$this->rowCount++;
 
 			yield $tuple;
