@@ -27,7 +27,7 @@ use Volkszaehler\Util\UUID;
 use Volkszaehler\Model\Aggregator;
 
 /**
- * Pre-defined, non-persistent entity type
+ * Pre-defined, non-persistent aggregator type
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default

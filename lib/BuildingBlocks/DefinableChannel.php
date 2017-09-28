@@ -28,7 +28,7 @@ use Volkszaehler\Model\Channel;
 use Volkszaehler\Interpreter\Interpreter;
 
 /**
- * Pre-defined, non-persistent entity type
+ * Pre-defined, non-persistent channel type
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default

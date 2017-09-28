@@ -29,7 +29,10 @@ use Volkszaehler\Model\Entity;
 use Volkszaehler\Util;
 
 /**
- * Block controller
+ * Block manager
+ *
+ * Block manager is responsible for loading and maintaining
+ * inventory of block entities
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
@@ -94,32 +97,23 @@ class BlockManager {
 	}
 
 	public function has($name) {
-		// uuid
-		if (Util\UUID::validate($name)) {
-			return in_array($name, array_map(function($entity) {
-				return $entity->getUuid();
-			}, $this->entities));
+		try {
+			$this->get($name);
+			return true;
 		}
-
-		// name
-		return isset($this->entities[$name]);
+		catch (\Exception $e) {
+			return false;
+		}
 	}
 
 	public function get($name) {
-		// uuid
-		if (Util\UUID::validate($name)) {
-			$entity = array_reduce($this->entities, function($carry, $entity) use ($name) {
-				if ($entity->getUuid() == $name) {
-					return $entity;
-				}
-				return $carry;
-			});
-
-			if (empty($entity)) {
-				throw new \Exception('Block interpreter ' . $name . ' doesn\'t exist');
-			}
-
-			return $entity;
+		foreach ($this->entities as $entity) {
+			if ($entity->getUuid() == $name)
+				return $entity;
+			if ($entity->getProperty('title') == $name &&
+				$entity->hasProperty('public') &&
+				$entity->getProperty('public'))
+				return $entity;
 		}
 
 		// name

@@ -31,6 +31,7 @@ use Volkszaehler\Util\EntityFactory;
 use Volkszaehler\Interpreter\Virtual\InterpreterCoordinatorTrait;
 use Volkszaehler\BuildingBlocks\DefinableGroup;
 use Volkszaehler\BuildingBlocks\DefinableChannel;
+use Volkszaehler\BuildingBlocks\AbstractBuildingBlock;
 use Volkszaehler\BuildingBlocks\BlockInterface;
 use Volkszaehler\BuildingBlocks\BlockManager;
 
@@ -40,22 +41,15 @@ use Volkszaehler\BuildingBlocks\BlockManager;
  * @author Andreas Goetz <cpuidle@gmx.de>
  * @package default
  */
-class Battery implements BlockInterface {
+class Battery extends AbstractBuildingBlock {
 
 	use InterpreterCoordinatorTrait;
-
-	const SENSOR = 'universalsensor';
-	const CONSUMPTION = 'consumptionsensor';
 
 	protected $em;
 	protected $ef;
 
-	protected $name;
-	protected $parameters;
-
 	public function __construct($name, ParameterBag $parameters) {
-		$this->name = $name;
-		$this->parameters = $parameters;
+		parent::__construct($name, $parameters);
 
 		// required parameters
 		foreach (array('charge', 'discharge', 'capacity') as $param) {
@@ -106,20 +100,17 @@ class Battery implements BlockInterface {
 			return;
 		}
 
-		$this->parameters->add($parameters->all());
 		$this->em = $em;
 		$this->ef = EntityFactory::getInstance($em);
+		$this->parameters->add($parameters->all());
 
 		// InterpreterCoordinatorTrait hack
 		$this->groupBy = $this->parameters->get('group');
 
 		// input channels
 		foreach (array('charge', 'discharge') as $function) {
-			$channel = $this->createChannel(self::CONSUMPTION, $function, array(
-				'unit' => 'W'
-			));
-
-			$this->addInput($function);
+			$interpreter = $this->interpreterForInput($function);
+			$this->addCoordinatedInterpreter($function, $interpreter);
 		}
 	}
 
@@ -152,21 +143,11 @@ class Battery implements BlockInterface {
 	/**
 	 * Create input interpreter
 	 */
-	protected function addInput($key) {
-		$from = $this->parameters->get('from');
-		$to = $this->parameters->get('to');
-		$tuples = $this->parameters->get('tuples');
-		$groupBy = $this->parameters->get('group');
-		$options = (array) $this->parameters->get('options');
-
-		$channel = $this->getParameter($key);
-
-		$entity = $this->ef->get($channel, true);
-		$class = $entity->getDefinition()->getInterpreter();
-		$interpreter = new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $options);
-
-		// create proxy iterator
-		$this->addCoordinatedInterpreter($key, $interpreter);
+	protected function interpreterForInput($function) {
+		$uuid = $this->getParameter($function);
+		$channel = $this->ef->get($uuid, true);
+		$interpreter = $this->ef->createInterpreter($channel, $this->parameters);
+		return $interpreter;
 	}
 
 	/**
