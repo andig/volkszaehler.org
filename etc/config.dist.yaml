@@ -38,6 +38,34 @@ push:
 network:
   # limit maximum POST body size, e.g. 4096
   postlimit: false
+  # local machines to trust as (reverse) proxy
+  proxies: ['127.0.0.1/8', '::1', '192.168.0.0/16', '172.16.0.0/12', '10.0.0.0/8', 'fe80::/64']
+
+# Access control
+# Define firewall rules per ip, path or method and actions 'allow', 'deny' and 'auth'
+firewall:
+  # localhost
+  - ips: ['127.0.0.1/8', '::1']
+    action: allow
+  # local network
+  - ips: ['192.168.0.0/16', '172.16.0.0/12', '10.0.0.0/8', 'fe80::/64']
+    action: allow
+  # always allow /auth - this is required
+  - path: /auth
+    methods: POST
+    action: allow
+  # authorize all other requests
+  - action: auth
+
+# User authorization for firewall rule action 'auth'
+# NOTE: if using authorization *ALWAYS* make sure HTTPS is enforced
+authorization:
+  secretkey:    # define your own random secret key
+  valid: 86400  # token validity period in seconds
+
+# add users below as user: password
+users:
+  user: password
 
 # enable debug messages by default if true
 debug: false
