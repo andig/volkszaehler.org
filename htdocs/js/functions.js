@@ -107,12 +107,22 @@ vz.load = function(args, skipDefaultErrorHandling) {
 		beforeSend: function (xhr, settings) {
 			// remember URL for potential error messages
 			xhr.requestUrl = settings.url;
+			xhr.middleware = args.middleware;
+
+			// add authorization header
+			var mw = vz.middleware.find(args.middleware);
+			if (mw && mw.authToken) {
+				xhr.setRequestHeader('Authorization', 'Bearer ' + mw.authToken);
+			}
 		}
 	});
 
 	if (args.url === undefined) { // local middleware by default
 		args.url = vz.options.middleware[0].url;
 	}
+
+	// store for later authentication
+	args.middleware = args.url;
 
 	if (args.controller !== undefined) {
 		args.url += '/' + args.controller;
@@ -159,7 +169,10 @@ vz.load = function(args, skipDefaultErrorHandling) {
  * Reusable authorization-aware error handler
  */
 vz.load.errorHandler = function(xhr, skipDefaultErrorHandling) {
-	if (!skipDefaultErrorHandling) {
+	if (xhr.status == 401) { // HTTP_UNAUTHORIZED
+		vz.wui.dialogs.authorizationException(xhr);
+	}
+	else if (!skipDefaultErrorHandling) {
 		vz.wui.dialogs.middlewareException(xhr);
 	}
 	return xhr;
