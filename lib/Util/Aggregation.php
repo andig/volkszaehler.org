@@ -25,7 +25,6 @@
 
 namespace Volkszaehler\Util;
 
-use Volkszaehler\Util;
 use Volkszaehler\Interpreter;
 use Volkszaehler\Interpreter\SQL\SQLOptimizer;
 use Volkszaehler\Definition;
