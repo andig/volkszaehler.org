@@ -63,9 +63,17 @@ authorization:
   secretkey:    # define your own random secret key
   valid: 86400  # token validity period in seconds
 
-# add users below as user: password
+# User configuration
 users:
-  user: password
+  # add users below as user: password
+  plain:
+    user: password
+  # add user constraints below as understood by bin/token-helper.php
+  # empty context/operation array means no constraints
+  constraints:
+    # user:
+    #   context: [ array of allowed contexts ]
+    #   operation: [ array of allowed operations ]
 
 # enable debug messages by default if true
 debug: false
