@@ -34,6 +34,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Application;
 
 define('VZ_DIR', realpath(__DIR__ . '/../..'));
@@ -48,10 +49,10 @@ class CreateCommand extends Command {
 	protected function configure() {
 		$this->setName('create')
 			->setDescription('Create JWT token')
- 		->addArgument('username', InputArgument::REQUIRED, 'User name')
- 		->addOption('operation', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Operation constraint (any of add, delete, get, edit or their HTTP equivalents POST, DELETE, GET, PATCH', [])
- 		->addOption('context', 'c', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Context constraint (any of data, entity etc.)', [])
- 		->addOption('valid', 'v', InputOption::VALUE_REQUIRED, 'Valid data (php notation)');
+		->addArgument('username', InputArgument::REQUIRED, 'User name')
+		->addOption('operation', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Operation constraint (any of add, delete, get, edit or their HTTP equivalents POST, DELETE, GET, PATCH', [])
+		->addOption('context', 'c', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Context constraint (any of data, entity etc.)', [])
+		->addOption('valid', 'v', InputOption::VALUE_REQUIRED, 'Valid data (php notation)');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output) {
@@ -94,7 +95,7 @@ class DecodeCommand extends Command {
 	protected function configure() {
 		$this->setName('decode')
 			->setDescription('Decode JWT token')
- 		->addArgument('token', InputArgument::REQUIRED, 'token');
+		->addArgument('token', InputArgument::REQUIRED, 'token');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output) {
@@ -108,12 +109,44 @@ class DecodeCommand extends Command {
 	}
 }
 
+class EncryptPasswordCommand extends Command {
+
+	protected function configure() {
+		$this->setName('password')
+			->setDescription('Encrypt password')
+		->addArgument('password', InputArgument::OPTIONAL);
+	}
+
+	protected function execute(InputInterface $input, OutputInterface $output) {
+		if (!($password = $input->getArgument('password'))) {
+			// ask for password
+			$helper = $this->getHelper('question');
+
+			$question = new Question('Password (hidden): ');
+			$question->setHidden(true);
+
+			$password = $helper->ask($input, $output, $question);
+
+			$question = new Question('Password (again): ');
+			$question->setHidden(true);
+
+			$repeat = $helper->ask($input, $output, $question);
+
+			if ($password !== $repeat) {
+				throw new \Exception('Passwords don\'t match');
+			}
+		}
+
+		echo $password;
+	}
+}
 
 $app = new Util\ConsoleApplication('Token helper');
 
 $app->addCommands(array(
 	new CreateCommand,
-	new DecodeCommand
+	new DecodeCommand,
+	new EncryptPasswordCommand
 ));
 
 $app->run();
