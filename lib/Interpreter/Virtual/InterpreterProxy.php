@@ -1,9 +1,8 @@
 <?php
 /**
- * @copyright Copyright (c) 2017, The volkszaehler.org project
  * @author Andreas Goetz <cpuidle@gmx.de>
- * @package default
- * @license http://www.opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -54,6 +53,9 @@ class InterpreterProxy implements \IteratorAggregate {
 		return $this->iterator;
 	}
 
+	/**
+	 * Set value evaluation strategy
+	 */
 	public function setStrategy($strategy) {
 		$this->strategy = $strategy;
 	}
@@ -83,14 +85,9 @@ class InterpreterProxy implements \IteratorAggregate {
 		}
 	}
 
-	/*
-	 * Proxied results
+	/**
+	 * Get current or previous interpreter value according to leading timestamp
 	 */
-
-	public function getTimestamp() {
-		throw new \Exception("Not implemented");
-	}
-
 	public function getValueForTimestamp($ts) {
 		$previous = $this->iterator->previous();
 		$current = $this->iterator->current();

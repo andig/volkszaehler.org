@@ -1,9 +1,8 @@
 <?php
 /**
- * @copyright Copyright (c) 2016, The volkszaehler.org project
  * @author Andreas Goetz <cpuidle@gmx.de>
- * @package default
- * @license http://www.opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -39,15 +38,14 @@ use RR\Shunt;
  */
 class VirtualInterpreter extends Interpreter {
 
+	use Virtual\InterpreterCoordinatorTrait;
+
 	const PRIMARY = 'in1';
 
 	/**
 	 * @var Doctrine\ORM\EntityManager
 	 */
 	protected $em;
-
-	protected $interpreters;	// array of input interpreters
-	protected $ic;				// collection of iterators
 
 	protected $ctx;
 	protected $parser;
@@ -67,9 +65,6 @@ class VirtualInterpreter extends Interpreter {
 
 		$this->em = $em;
 
-		$this->interpreters = array();
-		$this->timestampGenerator = new Virtual\TimestampGenerator();
-
 		// create parser for rule
 		$rule = $channel->getProperty('rule');
 		$this->parser = new Shunt\Parser(new Shunt\Scanner($rule));
@@ -78,11 +73,6 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx = new Shunt\Context();
 		$this->createStaticContextFunctions();
 		$this->createDynamicContextFunctions($channel->getPropertiesByRegex('/in\d/'));
-
-		// consolidate timestamps by period is required
-		if ($this->groupBy) {
-			$this->timestampGenerator = new Virtual\GroupedTimestampIterator($this->timestampGenerator, $this->groupBy);
-		}
 	}
 
 	/**
@@ -123,8 +113,11 @@ class VirtualInterpreter extends Interpreter {
 		// assign data functions
 		$this->ctx->def('val', array($this, '_val'));	// value
 		$this->ctx->def('ts', array($this, '_ts')); 	// timestamp
+		$this->ctx->def('prev', array($this, '_prev')); // previous timestamp
 		$this->ctx->def('from', array($this, '_from')); // from timestamp
 		$this->ctx->def('to', array($this, '_to')); 	// to timestamp
+
+		$this->ctx->def('cons', array($this, '_consumption')); 	// period consumption
 
 		// child interpreter options for calculation consumption
 		// at virtual interpreter level
@@ -133,13 +126,15 @@ class VirtualInterpreter extends Interpreter {
 			$options[$idx] = 'consumptionto';
 		}
 
+		$ef = Util\EntityFactory::getInstance($this->em);
+
 		// assign input channel functions
 		foreach ($uuids as $key => $value) {
 			$this->ctx->def($key, $key, 'string'); // as key constant
 			$this->ctx->def($key, function() use ($key) { return $this->_val($key); }); // as value function
 
 			// get chached entity
-			$entity = Controller\EntityController::factory($this->em, $value, true);
+			$entity = $ef->get($value, true);
 
 			// define named parameters
 			$title = preg_replace('/\s*/', '', $entity->getProperty('title'));
@@ -149,47 +144,50 @@ class VirtualInterpreter extends Interpreter {
 			$class = $entity->getDefinition()->getInterpreter();
 			$interpreter = new $class($entity, $this->em, $this->from, $this->to, $this->tupleCount, $this->groupBy, $options);
 
-			// timestamp strategy mode
-			$proxy = new Virtual\InterpreterProxy($interpreter);
-			if ($this->groupBy)
-				$proxy->setStrategy(Virtual\InterpreterProxy::STRATEGY_TS_BEFORE);
-			else
-				$proxy->setStrategyByEntityType($entity);
-			$this->interpreters[$key] = $proxy;
-
-			// add timestamp iterator to generator
-			$iterator = new Virtual\TimestampIterator($proxy->getIterator());
-			$this->timestampGenerator->add($iterator);
+			// add interpreter to timestamp coordination
+			$this->addCoordinatedInterpreter($key, $interpreter);
 		}
 	}
 
-	/**
-	 * Context function: get channel timestamp
+	/*
+	 * Context functions
 	 */
+
+	// get channel timestamp
 	public function _ts($key = self::PRIMARY) {
-		throw new \Exception("Not tested");
-		return $this->interpreters[$key]->getTimestamp();
+		return $this->ts;
 	}
 
-	/**
-	 * Context function: get channel value
-	 */
+	// get previous channel timestamp
+	public function _prev() {
+		return $this->ts_last;
+	}
+
+	// get channel value
 	public function _val($key = self::PRIMARY) {
-		return $this->interpreters[$key]->getValueForTimestamp($this->ts);
+		return $this->getCoordinatedInterpreter($key)->getValueForTimestamp($this->ts);
 	}
 
-	/**
-	 * Context function: get channel first timestamp
-	 */
+	// get channel first timestamp
 	public function _from($key = self::PRIMARY) {
-		return $this->interpreters[$key]->getFrom();
+		return $this->getCoordinatedInterpreter($key)->getFrom();
 	}
 
-	/**
-	 * Context function: get channel last timestamp
-	 */
+	// get channel last timestamp
 	public function _to($key = self::PRIMARY) {
-		return $this->interpreters[$key]->getTo();
+		return $this->getCoordinatedInterpreter($key)->getTo();
+	}
+
+	// get period consumption
+	public function _consumption($value) {
+		if (null === $prev = $this->_prev()) {
+			throw new \LogicException("_consumption could not determine previous timestamp");
+			return 0;
+		}
+
+		$period = $this->ts() - $prev;
+		$consumption = $value * $period / 3.6e6;
+		return $consumption;
 	}
 
 	/**
@@ -199,16 +197,12 @@ class VirtualInterpreter extends Interpreter {
 	 */
 	public function getIterator() {
 		$this->rowCount = 0;
-		$ts_last = null;
+		$this->ts_last = null;
 
-		foreach ($this->timestampGenerator as $this->ts) {
-			if (!isset($ts_last)) {
+		foreach ($this->getTimestampGenerator() as $this->ts) {
+			if (!isset($this->ts_last)) {
 				// create first timestmap as min from interpreters
-				foreach ($this->interpreters as $interpreter) {
-					$from = $interpreter->getFrom();
-					$ts_last = ($ts_last === null) ? $from : min($ts_last, $from);
-				}
-				$this->from = $ts_last;
+				$this->ts_last = $this->from = $this->getCoordinatedFrom();
 			}
 
 			// calculate
@@ -219,15 +213,15 @@ class VirtualInterpreter extends Interpreter {
 			}
 
 			if ($this->output == self::CONSUMPTION_VALUES) {
-				$value *= ($this->ts - $ts_last) / 3.6e6;
+				$value *= ($this->ts - $this->ts_last) / 3.6e6;
 				$this->consumption += $value;
 			}
 			else {
-				$this->consumption += $value * ($this->ts - $ts_last) / 3.6e6;
+				$this->consumption += $value * ($this->ts - $this->ts_last) / 3.6e6;
 			}
 
 			$tuple = array($this->ts, $value, 1);
-			$ts_last = $this->ts;
+			$this->ts_last = $this->ts;
 
 			$this->updateMinMax($tuple);
 			$this->rowCount++;
@@ -235,7 +229,7 @@ class VirtualInterpreter extends Interpreter {
 			yield $tuple;
 		}
 
-		$this->to = $ts_last;
+		$this->to = $this->ts_last;
 	}
 
 	/**

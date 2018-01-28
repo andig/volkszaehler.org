@@ -4,9 +4,8 @@
  * @author Justin Otherguy <justin@justinotherguy.org>
  * @author Steffen Vogel <info@steffenvogel.de>
  * @author Andreas Götz <cpuidle@gmx.de>
- * @copyright Copyright (c) 2011, The volkszaehler.org project
- * @package default
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -297,8 +296,16 @@ Entity.prototype.subscribe = function(session) {
  */
 Entity.prototype.unsubscribe = function() {
 	var mw = vz.middleware.find(this.middleware);
-	if (mw.session) {
-		mw.session.unsubscribe(this.uuid);
+	if (mw && mw.session) {
+		try {
+			mw.session.unsubscribe(this.uuid);
+		}
+		catch (e) {
+			// handle double unsubscribe, e.g. if channel in multiple groups
+			if (!e.match(/^not subscribed to topic/)) {
+				throw(e);
+			}
+		}
 	}
 };
 
@@ -503,6 +510,12 @@ Entity.prototype.showDetails = function() {
 						'Abbrechen': function() {
 							$(this).dialog('close');
 						}
+					}
+				})
+				.keypress(function(ev) {
+					// submit form on enter
+					if (ev.keyCode == $.ui.keyCode.ENTER) {
+						$('#entity-edit').siblings('.ui-dialog-buttonpane').find('button:eq(0)').click();
 					}
 				});
 			},

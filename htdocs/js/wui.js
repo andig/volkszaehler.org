@@ -5,9 +5,8 @@
  * @author Justin Otherguy <justin@justinotherguy.org>
  * @author Steffen Vogel <info@steffenvogel.de>
  * @author Andreas Götz <cpuidle@gmx.de>
- * @copyright Copyright (c) 2011, The volkszaehler.org project
- * @package default
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -191,7 +190,19 @@ vz.wui.dialogs.init = function() {
 			});
 		}
 	});
-	$('#entity-add.dialog > div').tabs();
+	$('#entity-add.dialog > div').tabs({
+		create: function(ev, ui) {
+			$(ui.panel).find('.defaultfocus').focus();
+		},
+		activate: function(ev, ui) {
+			if (ui.newPanel.attr('id') == 'entity-create') {
+				$(ui.newPanel).find('input[name=title]').focus();
+			}
+			else {
+				$(ui.newPanel).find('.defaultfocus').focus();
+			}
+		}
+	});
 
 	// show available entity types
 	vz.capabilities.definitions.entities.forEach(function(def) {
@@ -215,7 +226,11 @@ vz.wui.dialogs.init = function() {
 		populateEntities(vz.middleware.find($('#entity-public-middleware option:selected').val()));
 	});
 
-	$('#entity-subscribe input[type=button]').click(function() {
+	$('#entity-subscribe form').submit(function() {
+		if (!$('#entity-subscribe-uuid').val()) {
+			return false;
+		}
+
 		try {
 			var entity = new Entity({
 				uuid: $('#entity-subscribe-uuid').val(),
@@ -233,9 +248,11 @@ vz.wui.dialogs.init = function() {
 		finally {
 			$('#entity-add').dialog('close');
 		}
+
+		return false;
 	});
 
-	$('#entity-public input[type=button]').click(function() {
+	$('#entity-public form').submit(function() {
 		// clone entity from data attribute and activate it
 		var entity = $.extend({}, $('#entity-public-entity option:selected').data('entity'));
 		if ($.isEmptyObject(entity)) return;
@@ -250,6 +267,8 @@ vz.wui.dialogs.init = function() {
 		finally {
 			$('#entity-add').dialog('close');
 		}
+
+		return false;
 	});
 
 	function populateEntities(middleware) {
@@ -822,7 +841,18 @@ vz.wui.scaleNumberAndUnit = function(number, unit, maxPrefix) {
 vz.wui.formatNumber = function(number, unit, maxPrefix) {
 	// determine si unit and adjust value
 	var si = vz.wui.scaleNumberAndUnit(number, unit, maxPrefix);
+<<<<<<< HEAD
 	var precision = vz.wui.getPrecision(si.number, si.unit);
+=======
+
+	// precision, +1 digit for numbers < 1.0
+	var precision = (Math.abs(si.number) < vz.options.minNumber) ? 0 :
+		 Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(si.number))/Math.LN10)));
+
+	if (vz.options.maxPrecision[unit] !== undefined) {
+		precision = Math.min(vz.options.maxPrecision[unit], precision);
+	}
+>>>>>>> next
 
 	// rounding, si prefix and unit
 	number = si.number.toFixed(precision);
@@ -890,6 +920,9 @@ vz.wui.dialogs.error = function(error, description, code) {
 			Ok: function() {
 				$(this).dialog('close');
 			}
+		},
+		open: function() {
+			$(this).next().find('button:eq(0)').focus();
 		}
 	});
 };

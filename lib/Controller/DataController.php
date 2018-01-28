@@ -1,8 +1,7 @@
 <?php
 /**
- * @copyright Copyright (c) 2011, The volkszaehler.org project
- * @package default
- * @license http://www.opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -36,7 +35,6 @@ use Volkszaehler\View\View;
  * Data controller
  *
  * @author Steffen Vogel <info@steffenvogel.de>
- * @package default
  */
 class DataController extends Controller {
 
@@ -46,33 +44,7 @@ class DataController extends Controller {
 
 	public function __construct(Request $request, EntityManager $em, View $view) {
 		parent::__construct($request, $em, $view);
-
-		$this->options = self::makeArray(strtolower($this->getParameters()->get('options')));
-	}
-
-	/**
-	 * Return a single public entity by name
-	 * @param $name
-	 * @throws ORMException on empty or multiple results
-	 * @return mixed
-	 */
-	protected function getSingleEntityByName($name) {
-		$dql = 'SELECT e, p
-			FROM Volkszaehler\Model\Entity e
-			LEFT JOIN e.properties p
-			JOIN e.properties public
-			WHERE p.key = :key
-			AND p.value = :name
-			AND public.key = :key2
-			AND public.value = 1';
-
-		$q = $this->em->createQuery($dql)
-			->setParameter('key', 'title')
-			->setParameter('name', $name)
-			->setParameter('key2', 'public');
-
-		$entity = $q->getSingleResult();
-		return $entity;
+		$this->options = (array) strtolower($this->getParameters()->get('options'));
 	}
 
 	/**
@@ -82,25 +54,14 @@ class DataController extends Controller {
 	 * @return array
 	 */
 	public function get($uuid) {
-		$from = $this->getParameters()->get('from');
-		$to = $this->getParameters()->get('to');
-		$tuples = $this->getParameters()->get('tuples');
-		$groupBy = $this->getParameters()->get('group');
-
 		// single UUID
 		if (is_string($uuid)) {
-			if (!Util\UUID::validate($uuid)) {
-				// allow retrieving entity by name
-				try {
-					$entity = $this->getSingleEntityByName($uuid);
-					$uuid = $entity->getUuid();
-				}
-				catch (ORMException $e) {
-					throw new \Exception('Channel \'' . $uuid . '\' does not exist, is not public or its name is not unique.');
-				}
-			}
+			$from = $this->getParameters()->get('from');
+			$to = $this->getParameters()->get('to');
+			$tuples = $this->getParameters()->get('tuples');
+			$groupBy = $this->getParameters()->get('group');
 
-			$entity = EntityController::factory($this->em, $uuid, true); // from cache
+			$entity = $this->ef->get($uuid, true);
 			$class = $entity->getDefinition()->getInterpreter();
 			return new $class($entity, $this->em, $from, $to, $tuples, $groupBy, $this->options);
 		}
@@ -108,7 +69,7 @@ class DataController extends Controller {
 		// multiple UUIDs
 		return array_map(function($uuid) {
 			return $this->get($uuid);
-		}, self::makeArray($uuid));
+		}, (array) $uuid);
 	}
 
 	/**
@@ -120,7 +81,7 @@ class DataController extends Controller {
 	 * @throws \Exception
 	 */
 	public function add($uuid) {
-		$channel = EntityController::factory($this->em, $uuid, true);
+		$channel = $this->ef->get($uuid, true);
 
 		if (!$channel instanceof Model\Channel) {
 			throw new \Exception('Adding data is only supported for channels');
@@ -207,8 +168,8 @@ class DataController extends Controller {
 
 		$rows = 0;
 
-		foreach (self::makeArray($uuids) as $uuid) {
-			$channel = EntityController::factory($this->em, $uuid, true);
+		foreach ((array) $uuids as $uuid) {
+			$channel = $this->ef->get($uuid, true);
 			$rows += $channel->clearData($this->em->getConnection(), $from, $to);
 		}
 

@@ -2,8 +2,9 @@
 /**
  * Aggregation tests
  *
- * @package Test
  * @author Andreas Götz <cpuidle@gmx.de>
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 
 namespace Tests;
@@ -40,6 +41,7 @@ class AggregationTest extends DataPerformance
 	 * @group aggregation
 	 */
 	function testConfiguration() {
+		$this->assertTrue(true);
 		if (!Util\Configuration::read('aggregation')) {
 			$this->markTestSkipped('data aggregation not enabled');
 		}

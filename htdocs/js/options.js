@@ -4,9 +4,8 @@
  * @author Florian Ziegler <fz@f10-home.de>
  * @author Justin Otherguy <justin@justinotherguy.org>
  * @author Steffen Vogel <info@steffenvogel.de>
- * @copyright Copyright (c) 2011, The volkszaehler.org project
- * @package default
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -96,6 +95,9 @@ vz.options.plot = {
 		}
 	]
 };
+
+// minimum displayable value
+vz.options.minNumber = Math.pow(10, -(vz.options.precision + 1));
 
 vz.options.saveCookies = function() {
 	var expires = new Date(2038, 0, 1); // some days before y2k38 problem

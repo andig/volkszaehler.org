@@ -1,8 +1,7 @@
 <?php
 /**
- * @copyright Copyright (c) 2011, The volkszaehler.org project
- * @package default
- * @license http://www.opensource.org/licenses/gpl-license.php GNU Public License
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
  */
 /*
  * This file is part of volkzaehler.org
@@ -34,7 +33,6 @@ use Volkszaehler\Model;
 /**
  * JSON view
  *
- * @package default
  * @author Steffen Vogel <info@steffenvogel.de>
  * @author Andreas Goetz <cpuidle@gmx.de>
  */
@@ -68,6 +66,7 @@ class JSON extends View {
 		$this->response->headers->set('Content-Type', 'application/json');
 		$this->response->headers->set('Access-Control-Allow-Origin', '*');
 		$this->response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+		$this->response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS, DELETE');
 	}
 
 	/**
@@ -113,22 +112,6 @@ class JSON extends View {
 		}
 
 		return $this->response;
-	}
-
-	/**
-	 * Creates exception response
-	 *
-	 * @param \Exception $exception
-	 */
-	public function getExceptionResponse(\Exception $exception) {
-		$this->add($exception);
-
-		// only set status code if default - allows controllers to overwrite
-		if ($this->response->getStatusCode() == Response::HTTP_OK) {
-			$this->response->setStatusCode(Response::HTTP_BAD_REQUEST);
-		}
-
-		return $this->send();
 	}
 
 	protected function render() {
@@ -277,7 +260,7 @@ class JSON extends View {
 		elseif ($data instanceof Util\Debug) {
 			$this->json['debug'] = $data;
 		}
-		elseif ($data instanceof \Exception) {
+		elseif ($data instanceof \Throwable) {
 			$this->addException($data);
 		}
 		elseif (is_array($data)) {
@@ -387,7 +370,7 @@ class JSON extends View {
 	 * @param \Exception $exception
 	 * @param boolean $debug
 	 */
-	protected function addException(\Exception $exception) {
+	protected function addException(\Throwable $exception) {
 		$exceptionType = explode('\\', get_class($exception));
 		$exceptionInfo = array(
 			'message' => $exception->getMessage(),
