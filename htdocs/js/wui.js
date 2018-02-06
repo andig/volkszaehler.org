@@ -841,9 +841,6 @@ vz.wui.scaleNumberAndUnit = function(number, unit, maxPrefix) {
 vz.wui.formatNumber = function(number, unit, maxPrefix) {
 	// determine si unit and adjust value
 	var si = vz.wui.scaleNumberAndUnit(number, unit, maxPrefix);
-<<<<<<< HEAD
-	var precision = vz.wui.getPrecision(si.number, si.unit);
-=======
 
 	// precision, +1 digit for numbers < 1.0
 	var precision = (Math.abs(si.number) < vz.options.minNumber) ? 0 :
@@ -852,7 +849,6 @@ vz.wui.formatNumber = function(number, unit, maxPrefix) {
 	if (vz.options.maxPrecision[unit] !== undefined) {
 		precision = Math.min(vz.options.maxPrecision[unit], precision);
 	}
->>>>>>> next
 
 	// rounding, si prefix and unit
 	number = si.number.toFixed(precision);
