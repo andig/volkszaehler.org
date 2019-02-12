@@ -92,7 +92,15 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx->def('pow');           //Exponential expression
 		$this->ctx->def('round');         //Rounds a float
 		$this->ctx->def('sqrt');          //Square root
-		
+		$this->ctx->def('sin');           //Sine parameter in radians
+		$this->ctx->def('cos');           //Cosine parameter in radians
+		$this->ctx->def('tan');           //Tangent parameter in radians
+		$this->ctx->def('sin');           //Arc sine parameter in radians
+		$this->ctx->def('cos');           //Arc cosine parameter in radians
+		$this->ctx->def('tan');           //Arc tangent parameter in radians
+		$this->ctx->def('deg2rad');       //Converts the number in degrees to the radian equivalent
+		$this->ctx->def('rad2deg');       //Converts the radian number to the equivalent number in degrees
+
 		// non-php mathematical functions
 		$this->ctx->def('sgn', function($v) { if ($v == 0) return 0; return ($v > 0) ? 1 : -1; }); // signum
 		$this->ctx->def('avg', function() { return (array_sum(func_get_args()) / func_num_args()); }); // avg
