@@ -100,6 +100,8 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx->def('tan');           //Arc tangent parameter in radians
 		$this->ctx->def('deg2rad');       //Converts the number in degrees to the radian equivalent
 		$this->ctx->def('rad2deg');       //Converts the radian number to the equivalent number in degrees
+		$this->ctx->def('rand'); // random(lower bound, upper bound)
+
 
 		// non-php mathematical functions
 		$this->ctx->def('sgn', function($v) { if ($v == 0) return 0; return ($v > 0) ? 1 : -1; }); // signum
