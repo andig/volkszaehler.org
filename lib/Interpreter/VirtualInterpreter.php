@@ -95,12 +95,12 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx->def('sin');           //Sine parameter in radians
 		$this->ctx->def('cos');           //Cosine parameter in radians
 		$this->ctx->def('tan');           //Tangent parameter in radians
-		$this->ctx->def('sin');           //Arc sine parameter in radians
-		$this->ctx->def('cos');           //Arc cosine parameter in radians
-		$this->ctx->def('tan');           //Arc tangent parameter in radians
+		$this->ctx->def('asin');          //Arc sine parameter in radians
+		$this->ctx->def('acos');          //Arc cosine parameter in radians
+		$this->ctx->def('atan');          //Arc tangent parameter in radians
 		$this->ctx->def('deg2rad');       //Converts the number in degrees to the radian equivalent
 		$this->ctx->def('rad2deg');       //Converts the radian number to the equivalent number in degrees
-		$this->ctx->def('rand'); // random(lower bound, upper bound)
+		$this->ctx->def('rand');          //Random(lower bound, upper bound)
 
 
 		// non-php mathematical functions
