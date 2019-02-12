@@ -89,36 +89,22 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx->def('atan2');         //Arc tangent of two variables
 		$this->ctx->def('atan');          //Arc tangent
 		$this->ctx->def('atanh');         //Inverse hyperbolic tangent
-		$this->ctx->def('base_convert');  //Convert a number between arbitrary bases
-		$this->ctx->def('bindec');        //Binary to decimal
 		$this->ctx->def('ceil');          //Round fractions up
 		$this->ctx->def('cos');           //Cosine
 		$this->ctx->def('cosh');          //Hyperbolic cosine
-		$this->ctx->def('decbin');        //Decimal to binary
-		$this->ctx->def('dechex');        //Decimal to hexadecimal
-		$this->ctx->def('decoct');        //Decimal to octal
 		$this->ctx->def('deg2rad');       //Converts the number in degrees to the radian equivalent
 		$this->ctx->def('exp');           //Calculates the exponent of e
 		$this->ctx->def('expm1');         //Returns exp(number) - 1, computed in a way that is accurate even when the value of number is close to zero
 		$this->ctx->def('floor');         //Round fractions down
 		$this->ctx->def('fmod');          //Returns the floating point remainder (modulo) of the division of the arguments
 		$this->ctx->def('getrandmax');    //Show largest possible random value
-		$this->ctx->def('hexdec');        //Hexadecimal to decimal
 		$this->ctx->def('hypot');         //Calculate the length of the hypotenuse of a right-angle triangle
-		$this->ctx->def('intdiv');        //Integer division
-		$this->ctx->def('is_finite');     //Finds whether a value is a legal finite number
-		$this->ctx->def('is_infinite');   //Finds whether a value is infinite
-		$this->ctx->def('is_nan');        //Finds whether a value is not a number
 		$this->ctx->def('lcg_value');     //Combined linear congruential generator
 		$this->ctx->def('log10');         //Base-10 logarithm
 		$this->ctx->def('log1p');         //Returns log(1 + number), computed in a way that is accurate even when the value of number is close to zero
 		$this->ctx->def('log');           //Natural logarithm
 		$this->ctx->def('max');           //Find highest value
 		$this->ctx->def('min');           //Find lowest value
-		$this->ctx->def('mt_getrandmax'); //Show largest possible random value
-		$this->ctx->def('mt_rand');       //Generate a random value via the Mersenne Twister Random Number Generator
-		$this->ctx->def('mt_srand');      //Seeds the Mersenne Twister Random Number Generator
-		$this->ctx->def('octdec');        //Octal to decimal
 		$this->ctx->def('pi');            //Get value of pi
 		$this->ctx->def('pow');           //Exponential expression
 		$this->ctx->def('rad2deg');       //Converts the radian number to the equivalent number in degrees
