@@ -79,43 +79,19 @@ class VirtualInterpreter extends Interpreter {
 	 * Create static, non-data context functions
 	 */
 	protected function createStaticContextFunctions() {
-		// php function wrappers
-		// math functions (see php manual for arguments)
+		// php function wrappers (see php manual for arguments)
 		$this->ctx->def('abs');           //Absolute value
-		$this->ctx->def('acos');          //Arc cosine
-		$this->ctx->def('acosh');         //Inverse hyperbolic cosine
-		$this->ctx->def('asin');          //Arc sine
-		$this->ctx->def('asinh');         //Inverse hyperbolic sine
-		$this->ctx->def('atan2');         //Arc tangent of two variables
-		$this->ctx->def('atan');          //Arc tangent
-		$this->ctx->def('atanh');         //Inverse hyperbolic tangent
 		$this->ctx->def('ceil');          //Round fractions up
-		$this->ctx->def('cos');           //Cosine
-		$this->ctx->def('cosh');          //Hyperbolic cosine
-		$this->ctx->def('deg2rad');       //Converts the number in degrees to the radian equivalent
 		$this->ctx->def('exp');           //Calculates the exponent of e
-		$this->ctx->def('expm1');         //Returns exp(number) - 1, computed in a way that is accurate even when the value of number is close to zero
 		$this->ctx->def('floor');         //Round fractions down
 		$this->ctx->def('fmod');          //Returns the floating point remainder (modulo) of the division of the arguments
-		$this->ctx->def('getrandmax');    //Show largest possible random value
-		$this->ctx->def('hypot');         //Calculate the length of the hypotenuse of a right-angle triangle
-		$this->ctx->def('lcg_value');     //Combined linear congruential generator
 		$this->ctx->def('log10');         //Base-10 logarithm
-		$this->ctx->def('log1p');         //Returns log(1 + number), computed in a way that is accurate even when the value of number is close to zero
 		$this->ctx->def('log');           //Natural logarithm
 		$this->ctx->def('max');           //Find highest value
 		$this->ctx->def('min');           //Find lowest value
-		$this->ctx->def('pi');            //Get value of pi
 		$this->ctx->def('pow');           //Exponential expression
-		$this->ctx->def('rad2deg');       //Converts the radian number to the equivalent number in degrees
-		$this->ctx->def('rand');          //Generate a random integer
 		$this->ctx->def('round');         //Rounds a float
-		$this->ctx->def('sin');           //Sine
-		$this->ctx->def('sinh');          //Hyperbolic sine
 		$this->ctx->def('sqrt');          //Square root
-		$this->ctx->def('srand');         //Seed the random number generator
-		$this->ctx->def('tan');           //Tangent
-		$this->ctx->def('tanh');          //Hyperbolic tangent
 		
 		// non-php mathematical functions
 		$this->ctx->def('sgn', function($v) { if ($v == 0) return 0; return ($v > 0) ? 1 : -1; }); // signum
@@ -124,14 +100,17 @@ class VirtualInterpreter extends Interpreter {
 		// logical functions
 		$this->ctx->def('if', function($if, $then, $else = 0) { return $if ? $then : $else; });
 		$this->ctx->def('ifnull', function($if, $then) { return $if ?: $then; });
-
+		$this->ctx->def('or', function($a,$b) { return $a || $b; });
+		$this->ctx->def('and', function($a,$b) { return $a && $b; });
+		
 		// date/time functions
 		$this->ctx->def('year', function($ts) { return (int) date('Y', (int) $ts); });
 		$this->ctx->def('month', function($ts) { return (int) date('n', (int) $ts); });
 		$this->ctx->def('day', function($ts) { return (int) date('d', (int) $ts); });
 		$this->ctx->def('hour', function($ts) { return (int) date('H', (int) $ts); });
 		$this->ctx->def('minutes', function($ts) { return (int) date('i', (int) $ts); });
-		$this->ctx->def('seconds', function($ts) { return (int) date('s', (int) $ts); });
+		$this->ctx->def('seconds', function($ts) { return (int) date('s', (int) $ts); });		
+		$this->ctx->def('weekday', function($ts) { return (int) date('N', (int) $ts); }); //1=Monday 7=Sunday
 	}
 
 	/**
