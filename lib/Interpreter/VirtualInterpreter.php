@@ -94,12 +94,6 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx->def('sqrt');          //Square root
 		$this->ctx->def('sin');           //Sine parameter in radians
 		$this->ctx->def('cos');           //Cosine parameter in radians
-		$this->ctx->def('tan');           //Tangent parameter in radians
-		$this->ctx->def('asin');          //Arc sine parameter in radians
-		$this->ctx->def('acos');          //Arc cosine parameter in radians
-		$this->ctx->def('atan');          //Arc tangent parameter in radians
-		$this->ctx->def('deg2rad');       //Converts the number in degrees to the radian equivalent
-		$this->ctx->def('rad2deg');       //Converts the radian number to the equivalent number in degrees
 		$this->ctx->def('rand');          //Random(lower bound, upper bound)
 
 
@@ -110,6 +104,10 @@ class VirtualInterpreter extends Interpreter {
 		// logical functions
 		$this->ctx->def('if', function($if, $then, $else = 0) { return $if ? $then : $else; });
 		$this->ctx->def('ifnull', function($if, $then) { return $if ?: $then; });
+		$this->ctx->def('or', function() { $res=false; foreach ( func_get_args() as $v ) $res = $res || $v; return $res; });
+		$this->ctx->def('and', function() { $res=true; foreach ( func_get_args() as $v ) $res = $res && $v; return $res; });
+
+		
 		$this->ctx->def('or', function($a,$b) { return $a || $b; });
 		$this->ctx->def('and', function($a,$b) { return $a && $b; });
 		
