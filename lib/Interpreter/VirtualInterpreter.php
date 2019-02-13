@@ -106,10 +106,6 @@ class VirtualInterpreter extends Interpreter {
 		$this->ctx->def('ifnull', function($if, $then) { return $if ?: $then; });
 		$this->ctx->def('or', function() { $res=false; foreach ( func_get_args() as $v ) $res = $res || $v; return $res; });
 		$this->ctx->def('and', function() { $res=true; foreach ( func_get_args() as $v ) $res = $res && $v; return $res; });
-
-		
-		$this->ctx->def('or', function($a,$b) { return $a || $b; });
-		$this->ctx->def('and', function($a,$b) { return $a && $b; });
 		
 		// date/time functions
 		$this->ctx->def('year', function($ts) { return (int) date('Y', (int) $ts); });
