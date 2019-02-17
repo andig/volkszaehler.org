@@ -1,0 +1,180 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Data quality analysis command line tool
+ *
+ * @author Andreas Goetz <cpuidle@gmx.de>
+ * @copyright Copyright (c) 2011-2018, The volkszaehler.org project
+ * @license https://www.gnu.org/licenses/gpl-3.0.txt GNU General Public License version 3
+ */
+/*
+ * This file is part of volkzaehler.org
+ *
+ * volkzaehler.org is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * volkzaehler.org is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with volkszaehler.org. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+use Volkszaehler\Util;
+
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\StreamOutput;
+use Doctrine\DBAL\Logging\EchoSQLLogger;
+use Volkszaehler\Definition\EntityDefinition;
+
+define('VZ_DIR', realpath(__DIR__ . '/..'));
+
+require_once VZ_DIR . '/lib/bootstrap.php';
+
+
+/**
+ * BasicCommand
+ */
+abstract class BasicCommand extends Command {
+
+	/**
+	 * @var \Doctrine\ORM\EntityManager Doctrine EntityManager
+	 */
+	protected $em;
+
+	/**
+	 * @var \Symfony\Component\Console\Output\OutputInterface
+	 */
+	protected $output;
+
+	public function __construct() {
+		parent::__construct();
+
+		$this->em = Volkszaehler\Router::createEntityManager(true); // get admin credentials
+	}
+
+	protected function execute(InputInterface $input, OutputInterface $output) {
+		if ($input->getOption('verbose')) {
+			$this->em->getConnection()->getConfiguration()->setSQLLogger(new Util\ConsoleSQLLogger($output));
+		}
+		$this->output = $output;
+	}
+}
+
+/**
+ * Analyze data
+ */
+class AnalyzeCommand extends BasicCommand {
+
+	protected function configure() {
+		$this->setName('analyze')
+			->setDescription('Analyze data')
+			->addOption('filter', 'f', InputOption::VALUE_REQUIRED, 'Filter by channel name (default no filter). Seperate multiple by comma.', '')
+			->addOption('verbose', 'v', InputOption::VALUE_NONE, 'Verbose mode');
+	}
+
+	protected function fetchEntities(array $filters): array {
+		$entitiesSql = <<<EOD
+SELECT
+    e.id, e.uuid, e.type, p.value AS title
+FROM entities e
+INNER JOIN properties p ON
+    e.id = p.entity_id
+WHERE
+    e.class = "channel"
+    AND p.pkey = "title"
+EOD;
+
+		if (count($filters)) {
+			$names = array_map(function($name) {
+				return sprintf('p.value = "%s"', $name);
+			}, $filters);
+
+			$entitiesSql .= sprintf(' AND (%s)', join(' OR ', $names));
+		}
+
+		return $this->em->getConnection()->executeQuery($entitiesSql)->fetchAll();
+	}
+
+	protected function validate(array $entity) {
+        $sql = <<<EOD
+SELECT * FROM (
+	SELECT
+		id, timestamp, value,
+		LAG(value) OVER (order by channel_id,timestamp) AS pref,
+		LEAD(value) OVER (order by channel_id,timestamp) AS next
+	FROM data
+	WHERE
+		channel_id=%d
+	ORDER BY channel_id, timestamp
+) AS t
+WHERE
+	pref > value
+	AND next > value
+	AND next > pref;
+EOD;
+
+		try {
+			$definition = EntityDefinition::get($entity['type']);
+			if ($definition->interpreter !== 'Volkszaehler\Interpreter\AccumulatorInterpreter') {
+				// can only validate "Zähler"
+				return;
+			}
+		}
+		catch (\Exception $e) {
+		}
+
+		$sql = sprintf($sql, $entity['id']);
+        $data = $this->em->getConnection()->executeQuery($sql)->fetchAll();
+
+		if (count($data)) {
+			$table = new Table($this->output);
+			$table->setHeaders(['id', 'timestamp', 'pref >', 'value', '< next']);
+
+			foreach ($data as $row) {
+				$table->addRow(array_values($data));
+			}
+
+        	$table->render();
+		}
+	}
+
+	protected function execute(InputInterface $input, OutputInterface $output) {
+		parent::execute($input, $output);
+		$conn = $this->em->getConnection();
+
+		$filters = preg_split('/,/', $input->getOption('filter'), null, PREG_SPLIT_NO_EMPTY);
+		$entities = $this->fetchEntities($filters);
+
+		$stdout = new StreamOutput($output->getStream());
+		$progress = new ProgressBar($stdout, count($entities));
+
+		foreach ($entities as $idx => $entity) {
+            printf("\n\n%d/%d %s\n", $idx+1, count($entities), $entity['title']);
+			$this->validate($entity);
+			$progress->advance();
+		}
+
+		$progress->finish();
+	}
+}
+
+
+$app = new Util\ConsoleApplication('Data analysis tool');
+
+$app->addCommands(array(
+	new AnalyzeCommand
+));
+
+$app->run();
