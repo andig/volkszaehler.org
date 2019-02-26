@@ -117,12 +117,30 @@ vz.wui.exportData = function(value) {
 				});
 			});
 			break;
+		case 'grafana':
+			vz.wui.exportToGrafana();
+			break;
 		case 'csv':
 		case 'json':
 		case 'xml':
 			window.location = vz.getLink(value);
 			break;
 	}
+};
+
+/**
+ *
+ */
+vz.wui.exportToGrafana = function() {
+	console.log("exportToGrafana");
+
+	vz.load({
+		controller: 'grafana',
+		// data: properties,
+		method: 'POST'
+	}).done(function(json) {
+		console.log(json);
+	});
 };
 
 /**

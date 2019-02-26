@@ -32,7 +32,7 @@ use Volkszaehler\Interpreter\Interpreter;
 use Volkszaehler\View\View;
 
 use Andig\GrafanaSerializer\Model as GrafanaModel;
-use Andig\GrafanaSerializer\Request\CreateUpdateDashboard;
+use Andig\GrafanaSerializer\Request as GrafanaRequest;
 
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use JMS\Serializer\SerializerBuilder;
@@ -66,17 +66,20 @@ class GrafanaController extends Controller {
 		$title = Util\Configuration::read('grafana.dashboard.title', 'Volkszaehler');
 		$tags = Util\Configuration::read('grafana.dashboard.tags', ['Volkszaehler']);
 		$dashboard = new GrafanaModel\Dashboard($title, $tags);
+		$this->assignConfiguredProperties($dashbaord, 'dashboard');
 
 		$title = Util\Configuration::read('grafana.panel.title', 'Volkszaehler');
 		$type = Util\Configuration::read('grafana.panel.type', GrafanaModel\Panel::TYPE_GRAPH);
 		$panel = new GrafanaModel\Panel($title, $type);
+		$this->assignConfiguredProperties($panel, 'panel');
 
 		$panel->datasource = Util\Configuration::read('grafana.panel.datasource', 'gravo');
 		$panel->gridPos = Util\Configuration::read('grafana.panel.gridPos', new GrafanaModel\Dimensions(0, 0, 20, 10));
+		$dashboard->panels[] = $panel;
 
 		foreach ($channels as $channel) {
 			$target = new GrafanaModel\Target($channel->getUuid());
-			// $target->data = $jsonData;
+			$this->assignConfiguredProperties($target, 'target');
 			$panel->targets[] = $target;
 		}
 
@@ -86,20 +89,45 @@ class GrafanaController extends Controller {
 	private function post($dashboard) {
 		AnnotationRegistry::registerLoader('class_exists');
 
-		$request =
+		$request = new GrafanaRequest\CreateUpdateDashboard($dashboard, true);
 		$serializer = SerializerBuilder::create()->build();
 		$json = $serializer->serialize($request, 'json');
-		echo $json;
+
+		if (!($apikey = Util\Configuration::read('grafana.key'))) {
+            throw new \Exception('Missing grafana api key');
+		}
+		if (!($api = Util\Configuration::read('grafana.uri'))) {
+            throw new \Exception('Missing grafana api url');
+		}
 
 		$client = new Client(['headers' => [
-			'Authorization' => 'Bearer ' . Util\Configuration::read('grafana.apikey'),
+			'Authorization' => 'Bearer ' . $apikey,
 			'Content-type' => 'application/json',
 		]]);
 
-		$url = sprintf('%s/dashboards/db', rtrim($apiUri, '/'));
+		$url = sprintf('%s/dashboards/db', rtrim($api, '/'));
 		$resp = $client->request('POST', $url, ['body' => $json]);
 		$json = (string)$resp->getBody();
-		echo PHP_EOL. $json;
+		// echo $json;
+		$json = json_decode($json);
 
+	    $url = sprintf('%s/%s', rtrim($api, '/api'), ltrim($json->url, '/'));
+		// echo $url . PHP_EOL;
+
+		return ['data' => $json];
+	}
+
+	/**
+	 * Assign configuration entries to object
+	 *
+	 * @param stdClass $o
+	 * @param string $type
+	 * @return void
+	 */
+	private function assignConfiguredProperties(&$o, $type) {
+		$configKey = 'grafana.' . $type;
+		foreach (Util\Configuration::read($configKey) as $key => $val) {
+			$o[$key] = $val;
+		}
 	}
 }
