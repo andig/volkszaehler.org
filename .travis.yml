@@ -1,9 +1,9 @@
 language: php
 
 php:
-    - 7.0
     - 7.1
     - 7.2
+    - 7.3
 
 services:
     - mysql
@@ -16,34 +16,38 @@ env:
   global:
     - DEPENDENCIES=standard
     - TRAVIS_TEST_EXCLUDES="--exclude-group slow,jpgraph,pushserver"
+    # docker credentials
+    - secure: "j3ss+fkR/BCZuqZP0YUliq7+BUW26k7JdzMlPLwkKuvRJMWY24uizluy+2hsS9amM56wFgwTlTFa2gX2GO9VF4P6b6qIJ7ao0lii9LEowHTeZhfuaWvIdpFCvRyMUsDA/k5z4tqwECWhSTVbkEQica3p0JZYDzSDhsCkvPnSTpw="
+    - secure: "e5qxaqWLnohr4At0ZW/yT/2i6Q9g2OVRwk0trqr13A0J7SeHN6Mxdc9H0U3KdLE4KkPa2pW52sYuLPAOCSfZFYae8q8HzIyAsWVSQQGBoEuSWVCfCu4Q4I2rydrSAYzadBPVm6MOoNsym/+fVb2sHTG8mX6nd/kf7AcWqb8AerM="
+    - COMMIT=${TRAVIS_COMMIT::8}
+
   matrix:
     - DB=mysql
 
 matrix:
   include:
     # postgres
-    - php: 7.0
+    - php: 7.1
       services: postresql
       env: DB=pgsql
     # sqlite
-    - php: 7.0
+    - php: 7.1
       env: DB=sqlite
     # httpd-based
-    - php: 7.0
+    - php: 7.1
       env: DB=mysql COMPONENT=HTTPD
     # push-server
-    - php: 7.0
+    - php: 7.1
       env: DB=mysql COMPONENT=PUSHD
+    # docker
+    - php: 7.1
+      env: DB=mysql COMPONENT=DOCKER
     # from..to
-    - php: 7.0
+    - php: 7.1
       env: DB=mysql DEPENDENCIES=lowest
     # jslint-only
-    - php: 7.0
+    - php: 7.1
       env: DB= DEPENDENCIES= JSLINT=true
-
-notifications:
-    email: "volkszaehler-dev@lists.volkszaehler.org"
-    irc: "chat.freenode.net#volkszaehler.org"
 
 # speedup build
 cache:
@@ -134,3 +138,13 @@ script:
     # jslint javascript sources
     - if [ "$JSLINT" = true ]; then gulp jshint; fi
 
+after_success:
+    - |
+      if [ "$COMPONENT" == "DOCKER" ] && [ "$TRAVIS_BRANCH" == "next" ] && [ "$DOCKER_USER" != "" ]; then
+        docker login -u $DOCKER_USER -p $DOCKER_PASS
+        export REPO=andig/volkszaehler
+        docker pull $REPO:latest
+        docker build --cache-from $REPO:latest -f Dockerfile -t $REPO:$COMMIT .
+        docker tag $REPO:$COMMIT $REPO:latest
+        docker push $REPO
+      fi

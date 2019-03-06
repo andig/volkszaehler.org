@@ -79,9 +79,9 @@ $config['db']['path']				= 'volkszaehler.db3';
  * Database optimizer class
  *
  * For automatic leave empty. Other options:
- *   - MysqlOptimizer: provides additional group=15m setting (does not work with aggregation)
+ *   - MySQLOptimizer: provides additional group=15m setting (does not work with aggregation)
  */
-// $config['db']['optimizer']			= 'Volkszaehler\Interpreter\SQL\MysqlOptimizer';
+// $config['db']['optimizer']			= 'Volkszaehler\Interpreter\SQL\MySQLOptimizer';
 
 /**
  * Administration credentials
