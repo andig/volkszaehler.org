@@ -140,7 +140,7 @@ script:
 
 after_success:
     - |
-      if [ "$COMPONENT" == "DOCKER" ] && [ "$TRAVIS_BRANCH" == "next" ] && [ "$DOCKER_USER" != "" ]; then
+      if [ "$COMPONENT" = "DOCKER" ] && [ "$TRAVIS_BRANCH" = "next" ] && [ "$DOCKER_USER" != "" ]; then
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=andig/volkszaehler
         docker pull $REPO:latest
