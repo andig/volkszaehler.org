@@ -17,8 +17,8 @@ env:
     - DEPENDENCIES=standard
     - TRAVIS_TEST_EXCLUDES="--exclude-group slow,jpgraph,pushserver"
     # docker credentials
-    - secure: "j3ss+fkR/BCZuqZP0YUliq7+BUW26k7JdzMlPLwkKuvRJMWY24uizluy+2hsS9amM56wFgwTlTFa2gX2GO9VF4P6b6qIJ7ao0lii9LEowHTeZhfuaWvIdpFCvRyMUsDA/k5z4tqwECWhSTVbkEQica3p0JZYDzSDhsCkvPnSTpw="
-    - secure: "e5qxaqWLnohr4At0ZW/yT/2i6Q9g2OVRwk0trqr13A0J7SeHN6Mxdc9H0U3KdLE4KkPa2pW52sYuLPAOCSfZFYae8q8HzIyAsWVSQQGBoEuSWVCfCu4Q4I2rydrSAYzadBPVm6MOoNsym/+fVb2sHTG8mX6nd/kf7AcWqb8AerM="
+    - secure: "FutwwEarO9as0xFEfNfQxObjCEUV5FxBu4LdyA0ghK6LAU345U4tWxVrfkjxHLptoF8hQz9aEk7gjGpJwHmNp1XXDp1Y/DRMUw4nPi6heII1WOrxvWJeYBWG/fGoq3G05yxmKKpNh41+sC9YRR+AXSz4++UFZbchb8iOayy5J5k="
+    - secure: "X7+cDSYdpP5Jva9xFosyzIvqIQkAnI3Dqz5rqRZrBDoX+R+7qfFQbNlfgekdLoIZTgu+SoqUOogdR7zLh4Keh8jaWM65qU99mBCbm3gICqv7EOM01xvDPHCl+IaM8AolFbTPXdKky2zADvivk1f8RQZUmx8R5jjGxIN+fOS3Stc="
     - COMMIT=${TRAVIS_COMMIT::8}
 
   matrix:
