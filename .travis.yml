@@ -88,6 +88,7 @@ before_script:
     - sed -i "s/'volkszaehler'/'$DATABASE'/" etc/volkszaehler.conf.php
     - sed -i "s/'secretkey'/'secretkey' =\> '08154711', \/\//" etc/volkszaehler.conf.php
     - sed -i "s/\/\/ 'user'/'user'/" etc/volkszaehler.conf.php
+
     - if [ "$DB" = "sqlite" ]; then sed -i "s/\?>/\$config['db']['path']\ =\ VZ_DIR.'\/sqlite.db3'\;\n?>/" etc/volkszaehler.conf.php; fi
     - cat etc/volkszaehler.conf.php
 
@@ -138,12 +139,12 @@ script:
     - if [ "$JSLINT" = true ]; then gulp jshint; fi
 
 after_success:
-    - |
-      if [ "$COMPONENT" = "DOCKER" ] && [ "$TRAVIS_BRANCH" = "next" ] && [ "$DOCKER_USER" != "" ]; then
-        docker login -u $DOCKER_USER -p $DOCKER_PASS
-        export REPO=andig/volkszaehler
-        docker pull $REPO:latest
-        docker build --cache-from $REPO:latest -f Dockerfile -t $REPO:$COMMIT .
-        docker tag $REPO:$COMMIT $REPO:latest
-        docker push $REPO
-      fi
+    - echo $COMPONENT
+    - echo $TRAVIS_BRANCH
+    - echo $DOCKER_USER
+    - docker login -u $DOCKER_USER -p $DOCKER_PASS
+    - export REPO=andig/volkszaehler
+    - docker pull $REPO:latest
+    - docker build --cache-from $REPO:latest -f Dockerfile -t $REPO:$COMMIT .
+    - docker tag $REPO:$COMMIT $REPO:latest
+    - docker push $REPO
