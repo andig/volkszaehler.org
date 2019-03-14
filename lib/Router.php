@@ -195,10 +195,16 @@ class Router implements HttpKernelInterface {
 		}
 
 		// make sure proxy ip in trusted local network isn't mistaken for client ip
-		$proxies = Util\Configuration::read('proxies', []);
+		$proxies = Util\Configuration::read('security.proxies', []);
 		if (count($proxies)) {
 			$proxy_headers = Util\Configuration::read('proxy_headers', Request::HEADER_FORWARDED | Request::HEADER_X_FORWARDED_ALL);
 			$request->setTrustedProxies($proxies, $proxy_headers);
+		}
+
+		// check FORWARDED headers if not from trusted proxy
+		if ($this->hasUntrustedHeader($request)) {
+			$this->view->getResponse()->setStatusCode(Response::HTTP_UNAUTHORIZED);
+			throw new \Exception('Invalid client request headers');
 		}
 
 		// map GET operation to HTTP method for use in firewall rules
@@ -227,6 +233,36 @@ class Router implements HttpKernelInterface {
 		}
 
 		return $this->handler($request, $context, $uuid);
+	}
+
+	/**
+	 * Check if client request has untrusted FORWARD headers if not coming from
+	 * trusted proxy. This should prevent misconfigurations.
+	 *
+	 * @param Request $request
+	 * @return boolean
+	 */
+	function hasUntrustedHeader(Request $request): bool {
+		if ($request->isFromTrustedProxy()) {
+			return false;
+		}
+
+		$trustedHeaderSet = $request->getTrustedHeaderSet();
+		$trustedHeaders = [
+			'FORWARDED' => $trustedHeaderSet & Request::HEADER_FORWARDED,
+			'X_FORWARDED_FOR' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_FOR,
+			'X_FORWARDED_HOST' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_HOST,
+			'X_FORWARDED_PROTO' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_PROTO,
+			'X_FORWARDED_PORT' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_PORT,
+		];
+
+		foreach (array_filter($trustedHeaders) as $name => $key) {
+			if ($request->headers->has($name)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
