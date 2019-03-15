@@ -16,7 +16,8 @@
 # enable this rule if using ppm middleware
 <IfModule mod_proxy.c>
 	# RewriteEngine On
-	# RewriteRule ^middleware(.php)?/(.*) http://localhost:8080/$2 [P]
+	# RewriteRule ^middleware(.php)?(/.*)? http://localhost:8080$2 [P]
+	# RewriteRule ^api(.php)?(/.*)? http://localhost:8080$2 [P]
 </IfModule>
 
 <IfModule mod_rewrite.c>
@@ -28,8 +29,8 @@
 
 	# fix middleware suffix
 	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteRule ^middleware/(.*) middleware.php/$1 [L]
-	RewriteRule ^api/(.*) middleware.php/$1 [L]
+	RewriteRule ^middleware(/.*)? middleware.php$1 [L]
+	RewriteRule ^api(/.*)? middleware.php$1 [L]
 
 	# frontend alias
 	RewriteRule ^frontend/(.*) $1 [L]
