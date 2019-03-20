@@ -22,6 +22,8 @@
 	RewriteCond %{HTTP:Authorization} ^(.+)$
 	RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+	# fix middleware suffix
+	RewriteCond %{REQUEST_FILENAME} !-f
 	RewriteRule ^middleware(/.*)? middleware.php$1 [L]
 	RewriteRule ^api(/.*)? middleware.php$1 [L]
 
