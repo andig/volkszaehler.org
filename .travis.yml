@@ -12,6 +12,7 @@ env:
   - TRAVIS_TEST_EXCLUDES="--exclude-group slow,jpgraph,pushserver"
   - secure: Ph/EBYyRlBNDt4JJX58vRPswodJwNP1iTj+b/X6R4WjpWqo0O5JYkw7KzgXutVWSJuk/A9v1lg9SVrXcMdn/553JfZU0h1M+rGsHuVGBIkk9cmTlxrT78cDkI/Hk/0PINgdIOYE1UniRvWF5EGPIIrTjtKB4s/MCv/CXJokZ058=
   - secure: PrhfXk0WZqxcgMc+xp/mkTpdvZseXblF/MRu6MDlkD8tn9iQKEHM1Xy/dCIo2IHI40gEd/tr6imbBuPn06npINWyV1np6rmRWUNBuiano5khYkxZHPlVwKeXmnyCm4w5oZEHf8EzyJtK2R+8TFGzEUU/SjjWocZffkgf3oUn2aU=
+  - secure: FerKGahi3KDEvtB1feAKRjzGqv0K0wF76XIl8kFIkDDE+sm1o3sPDMl9XCoX2Xl9hhP7YzJCcNTF8eRqzYEeph6SCszKxfg7bCtKHmVVVHDQCxrE54lD1AyXjfR1ExjgwZr46tsdA0U4FKGo+oCOr2Nmj2QHAVvtDXmQG5NjTk4=
   matrix:
   - DB=mysql
 matrix:
