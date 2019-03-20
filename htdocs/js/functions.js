@@ -156,10 +156,15 @@ vz.load = function(args, skipDefaultErrorHandling) {
 /**
  * Reusable ajax request sender with error handling
  */
-vz.load.loadHandler = function(args, skipDefaultErrorHandling) {
-	return $.ajax(args).then(
+vz.load.loadHandler = function (args, skipDefaultErrorHandling) {
+	return $.ajax(args).always(function (res) {
+		NProgress.set(++vz.wui.requests.completed / vz.wui.requests.issued);
+		if (vz.wui.requests.completed == vz.wui.requests.issued) {
+			vz.wui.requests.issued = vz.wui.requests.completed = 0;
+		}
+	}).then(
 		// success
-		function(json, error, xhr) {
+		function (json, error, xhr) {
 			// ensure json response - might still be server error
 			if (!xhr.responseJSON) {
 				vz.load.errorHandler(xhr);
@@ -168,7 +173,7 @@ vz.load.loadHandler = function(args, skipDefaultErrorHandling) {
 			return $.Deferred().resolveWith(this, [json]);
 		},
 		// error
-		function(xhr) {
+		function (xhr) {
 			return vz.load.errorHandler(xhr, skipDefaultErrorHandling);
 		}
 	);

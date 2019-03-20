@@ -29,7 +29,7 @@ use PHPPM\Bootstraps\BootstrapInterface;
 // move out of lib/server
 define('VZ_DIR', realpath(__DIR__ . '/../..'));
 // check config file before bootstrap dies
-if (!file_exists(VZ_DIR . '/etc/volkszaehler.conf.php')) {
+if (!file_exists(VZ_DIR . '/etc/volkszaehler.conf.php') &! file_exists(VZ_DIR . '/etc/config.yaml')) {
 	throw new \Exception('Could not find config file.');
 }
 require_once(VZ_DIR . '/lib/bootstrap.php');
@@ -46,13 +46,5 @@ class PPMBootstrapAdapter implements BootstrapInterface
     {
         $app = new Router();
         return $app;
-    }
-
-    /**
-     * Static directory - only used if frontend served via ppm httpd
-     */
-    public function getStaticDirectory()
-    {
-        return VZ_DIR . '/htdocs';
     }
 }
