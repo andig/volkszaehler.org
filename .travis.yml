@@ -10,8 +10,8 @@ env:
   global:
   - DEPENDENCIES=standard
   - TRAVIS_TEST_EXCLUDES="--exclude-group slow,jpgraph,pushserver"
-  - secure: BHP0515m9qtXjMDPm5aBgxFFC8AIKAJ+qeKi7MdH1X4L+0rPjeLfbODlBzfmcd2l9MqBA2zX0GfNeXF34hwpz2+ODUB0lVOneAqqmMj6cMmsnJTDtTf+Hb2rS62an+FLDvn20EuwzS3DFHdd2nm5QCsD0KpuWMOGGCSITpW2Ce0=
-  - secure: XKt8ONx08FHFK74b83ijlU7Q7Z2hZBd0vAW8uWH2t2xuuAs+QgXWKxUF3Z8g2E4UhRuLnBu0JWyPfS0leljjqdpoptAqen0fJmTTqZTWWjUzfYFpv6YXhwNBfn21ITEgiZ7n4Pfx+n4QRYHSI5KlGs6sBDN24cZ/4z3fNFyj06U=
+  - secure: acHJuiNWlYPJPAb31whncYOfaHp8tPpCz/aGRpOpj/ahk8w2ECNfRXFInMz2VQqLwjErbfdjuPjfzqa1a02o7tjMljxoppe/UJ88pi9+s5B42vCUnOCi5A+y7h0GOpef6VBoknhf17l3/xWoonPzFHWMe0pH9RL+he1/T9IuDjU=
+  - secure: Z+u6Wv4HN+Cccalc71dZlYK65TCzv6h7/SsGugLiSUaditzbk/4AWAEKCY1SlFYDGGQmlVi1haqeo8OePLWc9EFAlaMS6cPh9CbViHDjwiP+J242e4BCwe9PYYR/RiseayPX4ftfVFYaGYJnm4aUVGIJ0lXVWPUqOeivvIWIdpU=
   matrix:
   - DB=mysql
 matrix:
