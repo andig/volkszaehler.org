@@ -280,8 +280,8 @@ abstract class Interpreter implements \IteratorAggregate {
 
         // calculate speedup if desired number of tuples is set
 		if (isset($this->from) && isset($this->to) && $this->tupleCount
-			&! $this->groupBy
-			&! $this->hasOption('consumption'))
+			&& !$this->groupBy
+			&& !$this->hasOption('consumption'))
 		{
             $this->calculateSpeedupGrouping();
         }
