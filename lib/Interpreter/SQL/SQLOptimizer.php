@@ -41,7 +41,6 @@ abstract class SQLOptimizer {
 	protected $conn;
 
 	protected $tupleCount;
-	protected $groupBy;
 
 	/**
 	 * Static factory method
@@ -83,7 +82,6 @@ abstract class SQLOptimizer {
 		$this->channel = $interpreter->getEntity();
 		$this->conn = $interpreter->getConnection();
 		$this->tupleCount = $interpreter->getTupleCount();
-		$this->groupBy = $interpreter->getGroupBy();
 	}
 
 	/**
@@ -99,6 +97,8 @@ abstract class SQLOptimizer {
 				return $this->interpreter->getOriginalFrom();
 			case 'to':
 				return $this->interpreter->getOriginalTo();
+			case 'groupBy':
+				return $this->interpreter->getGroupBy();
 			default:
 				throw new \Exception('Property ' . $name . ' does not exist');
 		}
