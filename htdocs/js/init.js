@@ -60,11 +60,11 @@ $(document).ready(function() {
 	NProgress.configure({ showSpinner: false });
 
 	// add timezone-js support
-	if (timezoneJS !== undefined && timezoneJS.Date !== undefined) {
-		timezoneJS.timezone.zoneFileBasePath = "tz";
-		timezoneJS.timezone.defaultZoneFile = [];
-		timezoneJS.timezone.init({ async: false });
-	}
+	// if (timezoneJS !== undefined && timezoneJS.Date !== undefined) {
+	// 	timezoneJS.timezone.zoneFileBasePath = "tz";
+	// 	timezoneJS.timezone.defaultZoneFile = [];
+	// 	timezoneJS.timezone.init({ async: false });
+	// }
 
 	// middleware(s)
 	vz.options.middleware.forEach(function(middleware) {

@@ -203,7 +203,7 @@ vz.wui.tickFormatter = function (value, axis, tickIndex, ticks) {
 	}
 
 	// scale value according to unit
-	value *= axis.options.si.scaler;
+	// value *= axis.options.si.scaler;
 
 	return value.toFixed(axis.tickDecimals);
 };
@@ -341,6 +341,7 @@ vz.wui.drawPlot = function () {
 
 		$.extend(plotOptions, {
 			bars: {
+				show: true,
 				barWidth: Math.max(barWidth, 1)
 			}
 		});
@@ -367,6 +368,33 @@ vz.wui.drawPlot = function () {
 	else {
 		$('#overlay').empty();
 	}
+
+	console.log(JSON.stringify(plotOptions));
+
+	$.extend(plotOptions, {
+		xaxes: [{
+			mode: "time",
+			timezone: "browser",
+			timeBase: "milliseconds",
+		}]
+	});
+	delete plotOptions.xaxis;
+	delete plotOptions.axisLabels;
+	delete plotOptions.bars;
+	delete plotOptions.lines;
+
+	// plotOptions.series = {};
+	// if (plotOptions.lines !== undefined) {
+	// 	plotOptions.series.lines = Object.assign({}, plotOptions.lines);
+	// 	delete (plotOptions.lines);
+	// }
+	// if (plotOptions.bars !== undefined) {
+	// 	plotOptions.series.bars = Object.assign({}, plotOptions.bars);
+	// 	delete(plotOptions.bars);
+	// }
+
+	// console.log(JSON.stringify(plotOptions));
+	console.log(plotOptions);
 
 	// call flot
 	vz.plot = $.plot($('#flot'), series, plotOptions);
