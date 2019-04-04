@@ -105,6 +105,26 @@ abstract class SQLOptimizer {
 	}
 
 	/**
+	 * Dynamic access to interpreter properties
+	 * From/to cannot be initialized in constructor as they are updated in interpreter
+	 *
+	 * @param string $name
+	 * @return bool
+	 */
+	public function __isset(string $name): bool {
+		switch ($name) {
+			case 'from':
+				return null !== $this->interpreter->getOriginalFrom();
+			case 'to':
+				return null !== $this->interpreter->getOriginalTo();
+			case 'groupBy':
+				return null !== $this->interpreter->getGroupBy();
+			default:
+				throw new \Exception('Property ' . $name . ' does not exist');
+		}
+	}
+
+	/**
 	 * DB-specific data grouping by date functions.
 	 * Static call is delegated to implementing classes.
 	 * Called by Interpreter->buildGroupBySQL
