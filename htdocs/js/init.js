@@ -67,6 +67,7 @@ $(document).ready(function() {
 	}
 
 	// add timezone-js support
+	var timezoneJS;
 	if (timezoneJS !== undefined && timezoneJS.Date !== undefined) {
 		timezoneJS.timezone.zoneFileBasePath = "tz";
 		timezoneJS.timezone.defaultZoneFile = [];

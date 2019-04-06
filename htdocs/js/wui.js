@@ -29,18 +29,18 @@
  */
 vz.wui.init = function() {
 	vz.wui.initEvents();
-	vz.wui.resizePlot();
+	// vz.wui.resizePlot();
 
 	// resize handling
-	$(window).resize(vz.wui.resizePlot);
-	$('#accordion h3').click(function() {
-		// capture window height before toggling section to avoid miscalculation due to scrollbar flickering
-		var windowHeight = $(window).height();
-		$(this).next().toggle(0, function() {
-			vz.wui.resizePlot(null, windowHeight);
-		});
-		return false;
-	}).next().hide();
+	// $(window).resize(vz.wui.resizePlot);
+	// $('#accordion h3').click(function() {
+	// 	// capture window height before toggling section to avoid miscalculation due to scrollbar flickering
+	// 	var windowHeight = $(window).height();
+	// 	$(this).next().toggle(0, function() {
+	// 		vz.wui.resizePlot(null, windowHeight);
+	// 	});
+	// 	return false;
+	// }).next().hide();
 	$('#entity-list').show(); // open entity list by default
 
 	// buttons
@@ -100,6 +100,8 @@ vz.wui.init = function() {
  * Adjust plot when screen size changes
  */
 vz.wui.resizePlot = function(evt, windowHeight) {
+	vz.wui.drawPlot();
+	return;
 	// resize container depending on window vs. content height
 	var delta = (windowHeight || $(window).height()) - $('html').height();
 	$('#flot').height(Math.max($('#flot').height() + delta, vz.options.plot.minHeight || 300));
@@ -739,7 +741,7 @@ vz.wui.setTimeout = function() {
 	}
 
 	var t = Math.max((vz.options.plot.xaxis.max - vz.options.plot.xaxis.min) / vz.options.tuples, vz.options.minTimeout);
-	vz.wui.timeout = window.setTimeout(vz.wui.refresh, t);
+	// vz.wui.timeout = window.setTimeout(vz.wui.refresh, t);
 
 	$('#refresh-time').html('(' + Math.round(t / 1000) + ' s)');
 };
