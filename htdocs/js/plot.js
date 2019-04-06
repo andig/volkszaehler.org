@@ -63,7 +63,6 @@ vz.wui.updateHeadline = function () {
  *      b. tickFormatter takes care of y axis ticks (flot core modification)
  */
 vz.wui.drawPlot = function () {
-	// return;
 	vz.options.interval = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
 	vz.wui.updateHeadline();
 
@@ -174,7 +173,7 @@ vz.wui.drawPlot = function () {
 		},
 		data: {},
 		options: {
-			responsive: false,
+			responsive: true,
 			maintainAspectRatio: false,
 			scales: {
 				xAxes: [
@@ -233,22 +232,19 @@ vz.wui.drawPlot = function () {
 	console.log("axes:");
 	console.log(yaxes);
 
-	// if (vz.chart) {
-	// 	vz.chart.destroy();
-	// 	$('#plot').empty().append('<canvas id="flot"></canvas>');
-	// }
-
-	if (!vz.chart) {
-		vz.chart = new Chart($('#flot'), config);
+	if (vz.chart) {
+		vz.chart.destroy();
+		$('#plot').empty().append('<canvas id="flot"></canvas>');
 	}
 
-	var print = $.extend({}, config);
-	vz.chartconfig = JSON.stringify(print);
+	// if (!vz.chart) {
+	// 	vz.chart = new Chart($('#flot'), config);
+	// }
 	// print = JSON.stringify(print);
-	console.log(print);
-	// var chart = new Chart($('#flot'), config);
-	// vz.chart = chart;
-	return;
+
+	console.log($.extend({}, config));
+	var chart = new Chart($('#flot'), config);
+	vz.chart = chart;
 
 	// disable automatic refresh if we are in past
 	if (vz.options.refresh) {

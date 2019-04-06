@@ -29,18 +29,18 @@
  */
 vz.wui.init = function() {
 	vz.wui.initEvents();
-	// vz.wui.resizePlot();
+	vz.wui.resizePlot();
 
 	// resize handling
-	// $(window).resize(vz.wui.resizePlot);
-	// $('#accordion h3').click(function() {
-	// 	// capture window height before toggling section to avoid miscalculation due to scrollbar flickering
-	// 	var windowHeight = $(window).height();
-	// 	$(this).next().toggle(0, function() {
-	// 		vz.wui.resizePlot(null, windowHeight);
-	// 	});
-	// 	return false;
-	// }).next().hide();
+	$(window).resize(vz.wui.resizePlot);
+	$('#accordion h3').click(function() {
+		// capture window height before toggling section to avoid miscalculation due to scrollbar flickering
+		var windowHeight = $(window).height();
+		$(this).next().toggle(0, function() {
+			vz.wui.resizePlot(null, windowHeight);
+		});
+		return false;
+	}).next().hide();
 	$('#entity-list').show(); // open entity list by default
 
 	// buttons
