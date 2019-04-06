@@ -59,6 +59,19 @@ vz.options = {
 };
 
 /**
+ * Time formatting options
+ */
+vz.options.time = {
+	'second': 'HH:mm:ss',
+	'minute': 'HH:mm:ss',
+	'hour': 'D. MMM HH:mm',
+	'day': 'D. MMM',
+	'month': 'MMM YYYY',
+	'quarter': '[Q]Q/YYYY',
+	'detailed': 'D. MMM YYYY HH:mm:ss'
+};
+
+/**
  * Plot options are passed on to flot
  */
 vz.options.plot = {
