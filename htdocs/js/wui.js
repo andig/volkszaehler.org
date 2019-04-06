@@ -825,6 +825,21 @@ vz.wui.formatNumber = function(number, unit, maxPrefix) {
 };
 
 /**
+ * Get precision in digits
+ */
+vz.wui.getPrecision = function (value, unit) {
+	// precision, +1 digit for numbers < 1.0
+	var precision = (Math.abs(value) < Math.pow(10, -(vz.options.precision + 1))) ? 0 :
+		Math.max(0, vz.options.precision - Math.max(-1, Math.floor(Math.log(Math.abs(value)) / Math.LN10)));
+
+	if (vz.options.maxPrecision[unit] !== undefined) {
+		precision = Math.min(vz.options.maxPrecision[unit], precision);
+	}
+
+	return precision;
+};
+
+/**
  * Convert units into hourly consumption unit
  */
 vz.wui.formatConsumptionUnit = function(unit) {
