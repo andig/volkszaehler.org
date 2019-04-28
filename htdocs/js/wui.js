@@ -91,7 +91,7 @@ vz.wui.init = function() {
 	// toggle all channels
 	$('#entity-toggle').click(function() {
 		vz.entities.each(function(entity, parent) {
-			entity.activate(!entity.active, parent, false).done(vz.wui.drawPlot);
+			entity.activate(!entity.active, parent, false).done(vz.plot.draw);
 		}, true);
 	});
 };
@@ -100,7 +100,7 @@ vz.wui.init = function() {
  * Adjust plot when screen size changes
  */
 vz.wui.resizePlot = function(evt, windowHeight) {
-	vz.wui.drawPlot();
+	vz.plot.draw();
 	return;
 	// resize container depending on window vs. content height
 	var delta = (windowHeight || $(window).height()) - $('html').height();
@@ -114,7 +114,7 @@ vz.wui.resizePlot = function(evt, windowHeight) {
 	}
 	else {
 		// draw empty plot startup
-		vz.wui.drawPlot();
+		vz.plot.draw();
 	}
 };
 
@@ -168,7 +168,7 @@ vz.wui.addEntity = function(entity) {
 	}, true); // recursive
 
 	$.when.apply($, queue).then(function() {
-		vz.wui.drawPlot();
+		vz.plot.draw();
 		entity.loadTotalConsumption().done(vz.entities.updateTableColumnVisibility);
 		entity.eachChild(function(child) {
 			child.loadTotalConsumption();
@@ -492,7 +492,7 @@ vz.wui.zoomToPartialUpdate = function(to) {
 		vz.wui.pushRedrawTimeout = window.setTimeout(function() {
 			vz.wui.pushRedrawTimeout = null;
 			if (!vz.wui.plotSelectionActive) {
-				vz.wui.drawPlot();
+				vz.plot.draw();
 			}
 		}, vz.options.pushRedrawTimeout);
 	}
@@ -524,7 +524,7 @@ vz.wui.initEvents = function() {
 			vz.options.plot.yaxis.max = axes.yaxis.max;
 		})
 		.bind('mouseup', function(event) {
-			vz.entities.loadData().done(vz.wui.drawPlot);
+			vz.entities.loadData().done(vz.plot.draw);
 		})
 		.bind('plotzoom', function (event, plot) {
 			var axes = plot.getAxes();
@@ -532,7 +532,7 @@ vz.wui.initEvents = function() {
 			vz.options.plot.xaxis.max = axes.xaxis.max;
 			vz.options.plot.yaxis.min = axes.yaxis.min;
 			vz.options.plot.yaxis.max = axes.yaxis.max;
-			vz.entities.loadData().done(vz.wui.drawPlot);
+			vz.entities.loadData().done(vz.plot.draw);
 		});*/
 		.bind("plothover", function (event, pos, item) {
 			vz.options.plot.hoverPos = pos;
@@ -700,7 +700,7 @@ vz.wui.zoom = function(from, to) {
 		vz.options.plot.xaxis.min = 0;
 	}
 
-	vz.entities.loadData().done(vz.wui.drawPlot);
+	vz.entities.loadData().done(vz.plot.draw);
 };
 
 /**

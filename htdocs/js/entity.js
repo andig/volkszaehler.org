@@ -457,7 +457,7 @@ Entity.prototype.showDetails = function () {
 									}, true);
 
 									vz.entities.showTable();
-									vz.wui.drawPlot();
+									vz.plot.draw();
 									dialog.dialog('close');
 								});
 
@@ -511,7 +511,7 @@ Entity.prototype.showDetails = function () {
 									entity.parseJSON(json.entity); // update entity
 									try {
 										vz.entities.showTable();
-										vz.entities.loadData().done(vz.wui.drawPlot);
+										vz.entities.loadData().done(vz.plot.draw);
 									}
 									catch (e) {
 										vz.wui.dialogs.exception(e);
@@ -682,7 +682,7 @@ Entity.prototype.getDOMRow = function (parent) {
 				.attr('checked', this.active)
 				.bind('click', this, function (event) {
 					var entity = event.data;
-					entity.activate($(this).prop('checked'), null, true).done(vz.wui.drawPlot);
+					entity.activate($(this).prop('checked'), null, true).done(vz.plot.draw);
 					vz.entities.saveCookie();
 					event.stopPropagation();
 				})
@@ -736,7 +736,7 @@ Entity.prototype.getDOMRow = function (parent) {
 				vz.entities.splice(vz.entities.indexOf(event.data), 1); // remove
 				vz.entities.saveCookie();
 				vz.entities.showTable();
-				vz.wui.drawPlot();
+				vz.plot.draw();
 				event.stopPropagation();
 			})
 		);

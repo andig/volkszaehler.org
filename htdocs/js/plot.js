@@ -28,7 +28,7 @@
 /**
  * Update headline on zoom
  */
-vz.wui.updateHeadline = function () {
+vz.plot.updateHeadline = function () {
 	var delta = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min,
 		format = 'D. MMM YYYY',
 		from = vz.options.plot.xaxis.min,
@@ -62,9 +62,9 @@ vz.wui.updateHeadline = function () {
  *      a. orderBars adjusts Xaxis min/max for consumption mode (orderBars core modification)
  *      b. tickFormatter takes care of y axis ticks (flot core modification)
  */
-vz.wui.drawPlot = function () {
+vz.plot.draw = function () {
 	vz.options.interval = vz.options.plot.xaxis.max - vz.options.plot.xaxis.min;
-	vz.wui.updateHeadline();
+	vz.plot.updateHeadline();
 
 	// assign entities to axes
 	if (vz.options.plot.axesAssigned === false) {
@@ -177,7 +177,7 @@ vz.wui.drawPlot = function () {
 			maintainAspectRatio: false,
 			scales: {
 				xAxes: [
-					vz.wui.timeAxis({
+					vz.plot.timeAxis({
 						id: 'axis-bar',
 						type: 'category',
 						display: false,
@@ -187,10 +187,10 @@ vz.wui.drawPlot = function () {
 						ticks: {
 							maxRotation: 0,
 							stepSize: 1,
-							callback: vz.wui.tickCategoryFormatter
+							callback: vz.plot.tickCategoryFormatter
 						}
 					}),
-					vz.wui.timeAxis({
+					vz.plot.timeAxis({
 						id: 'axis-time',
 					}),
 				],
@@ -221,16 +221,16 @@ vz.wui.drawPlot = function () {
 		}
 	};
 
-	var datasets = vz.wui.prepareDatasets(config, series);
-	var yaxes = vz.wui.prepareYAxes(config, datasets);
-	vz.wui.configureOptionalBarMode(config, series);
+	var datasets = vz.plot.prepareDatasets(config, series);
+	var yaxes = vz.plot.prepareYAxes(config, datasets);
+	vz.plot.configureOptionalBarMode(config, series);
 
-	console.log("series:");
-	console.log(series);
+	// console.log("series:");
+	// console.log(series);
 	console.log("datasets:");
 	console.log(datasets);
-	console.log("axes:");
-	console.log(yaxes);
+	// console.log("axes:");
+	// console.log(yaxes);
 
 	if (vz.chart) {
 		vz.chart.destroy();
@@ -248,7 +248,7 @@ vz.wui.drawPlot = function () {
 
 	// disable automatic refresh if we are in past
 	if (vz.options.refresh) {
-		if (vz.wui.tmaxnow) {
+		if (vz.plot.tmaxnow) {
 			vz.wui.setTimeout();
 		} else {
 			vz.wui.clearTimeout('(suspended)');
@@ -261,7 +261,7 @@ vz.wui.drawPlot = function () {
 /**
  * Map series to chartjs datasets
  */
-vz.wui.prepareDatasets = function (config, series) {
+vz.plot.prepareDatasets = function (config, series) {
 	var datasets = [], labels;
 	series.forEach(function (serie) {
 		var dataset = {
@@ -355,7 +355,7 @@ vz.wui.prepareDatasets = function (config, series) {
 /**
  * Configure chartjs y axes
  */
-vz.wui.prepareYAxes = function (config, datasets) {
+vz.plot.prepareYAxes = function (config, datasets) {
 	var axes = [];
 	vz.options.plot.yaxes.forEach(function (_axis, id) {
 		var axisId = "axis" + (id + 1);
@@ -375,7 +375,7 @@ vz.wui.prepareYAxes = function (config, datasets) {
 		var axis = {
 			id: axisId,
 			ticks: {
-				callback: vz.wui.tickValueFormatter
+				callback: vz.plot.tickValueFormatter
 			},
 			position: _axis.position == 'right' ? 'right' : 'left',
 			unit: _axis.axisLabel,
@@ -411,7 +411,7 @@ vz.wui.prepareYAxes = function (config, datasets) {
 	return axes;
 };
 
-vz.wui.prepareCategoryLabels = function () {
+vz.plot.prepareCategoryLabels = function () {
 	var labels = [];
 
 	var periodLocale = vz.options.mode == 'week' ? 'isoweek' : vz.options.mode;
@@ -420,7 +420,6 @@ vz.wui.prepareCategoryLabels = function () {
 
 	// create label series
 	var current = moment(vz.wui.adjustTimestamp(start, true));
-	// var current = moment(vz.wui.adjustTimestamp(start, false));
 	while (current.valueOf() < end.valueOf()) {
 		labels.push(current.valueOf());
 		current.add(1, periodLocale);
@@ -429,14 +428,14 @@ vz.wui.prepareCategoryLabels = function () {
 	return labels;
 };
 
-vz.wui.configureOptionalBarMode = function (config, series) {
+vz.plot.configureOptionalBarMode = function (config, series) {
 	// change chart options for bar mode
 	if (config.data.datasets.some(function (dataset) {
 		return dataset.type == 'bar';
 	})) {
 		// global options
 		config.type = 'bar';
-		config.data.labels = vz.wui.prepareCategoryLabels();
+		config.data.labels = vz.plot.prepareCategoryLabels();
 
 		// scale visibility
 		config.options.scales.xAxes.forEach(function (axis) {
@@ -451,21 +450,21 @@ vz.wui.configureOptionalBarMode = function (config, series) {
 	}
 };
 
-vz.wui.tickValueFormatter = function (value, index, values) {
+vz.plot.tickValueFormatter = function (value, index, values) {
 	// format 0.0 as 0
 	var precision = value == 0.0 ? 0 : this.options.si.precision;
 	value = (value * this.options.si.scaler).toFixed(precision);
 	return value;
 };
 
-vz.wui.tickCategoryFormatter = function (value, index, values) {
+vz.plot.tickCategoryFormatter = function (value, index, values) {
 	var format = vz.options.time[vz.options.mode];
 	// console.log(vz.options.mode);
 	// console.log(format);
 	return moment(value).format(format);
 };
 
-vz.wui.timeAxis = function (config) {
+vz.plot.timeAxis = function (config) {
 	return $.extend({}, {
 		type: 'time',
 		gridLines: {

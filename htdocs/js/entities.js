@@ -203,7 +203,7 @@ vz.entities.dropTableHandler = function(from, to, child, clone) {
 
 			$.when.apply($, q).done(function() {
 				vz.entities.showTable();
-				$.when.apply($, p).done(vz.wui.drawPlot);
+				$.when.apply($, p).done(vz.plot.draw);
 			});
 		});
 	}
@@ -320,7 +320,7 @@ vz.entities.showTable = function() {
 			}, true).selected = true;
 		}
 
-		vz.wui.drawPlot();
+		vz.plot.draw();
 	});
 
 	$('#entity-list table').treeTable({
