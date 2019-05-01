@@ -1,6 +1,7 @@
 # volkszaehler.org
 
 [![Build Status](https://travis-ci.org/volkszaehler/volkszaehler.org.svg?branch=master)](https://travis-ci.org/volkszaehler/volkszaehler.org)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BB3W3WH7GVSNW)
 
 volkszaehler.org is a free smart meter implementation with focus on data privacy.
 
